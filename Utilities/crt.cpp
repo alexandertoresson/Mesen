@@ -1,53 +1,63 @@
 /*****************************************************************************/
 /*
  * NTSC/CRT - integer-only NTSC video signal encoding / decoding emulation
- * 
+ *
  *   by EMMIR 2018-2023
- *   
+ *   modifications for Mesen by Persune
+ *   https://github.com/LMP88959/NTSC-CRT
+ *
  *   YouTube: https://www.youtube.com/@EMMIR_KC/videos
  *   Discord: https://discord.com/invite/hdYctSmyQJ
  */
 /*****************************************************************************/
+#include "stdafx.h"
+
 #include "crt.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-/*
- *                      FULL HORIZONTAL LINE SIGNAL (~63500 ns)
+/* NES composite signal is measured in terms of PPU pixels, or cycles
+ * https://www.nesdev.org/wiki/NTSC_video#Scanline_Timing
+ *
+ *                         FULL HORIZONTAL LINE SIGNAL
+ *             (341 PPU px; one cycle skipped on odd rendered frames)
  * |---------------------------------------------------------------------------|
- *   HBLANK (~10900 ns)                 ACTIVE VIDEO (~52600 ns)
+ *   HBLANK (58 PPU px)               ACTIVE VIDEO (283 PPU px)
  * |-------------------||------------------------------------------------------|
- *   
- *   
+ *
+ *
  *   WITHIN HBLANK PERIOD:
- *   
- *   FP (~1500 ns)  SYNC (~4700 ns)  BW (~600 ns)  CB (~2500 ns)  BP (~1600 ns)
+ *
+ *   FP (9 PPU px)  SYNC (25 PPU px) BW (4 PPU px) CB (15 PPU px) BP (5 PPU px)
  * |--------------||---------------||------------||-------------||-------------|
  *      BLANK            SYNC           BLANK          BLANK          BLANK
- * 
+ *
  */
 #define LINE_BEG         0
-#define FP_ns            1500      /* front porch */
-#define SYNC_ns          4700      /* sync tip */
-#define BW_ns            600       /* breezeway */
-#define CB_ns            2500      /* color burst */
-#define BP_ns            1600      /* back porch */
-#define AV_ns            52600     /* active video */
-#define HB_ns            (FP_ns + SYNC_ns + BW_ns + CB_ns + BP_ns) /* h blank */
+#define FP_PPUpx         9         /* front porch */
+#define SYNC_PPUpx       25        /* sync tip */
+#define BW_PPUpx         4         /* breezeway */
+#define CB_PPUpx         15        /* color burst */
+#define BP_PPUpx         5         /* back porch */
+#define PS_PPUpx         1         /* pulse */
+#define LB_PPUpx         15        /* left border */
+#define AV_PPUpx         256       /* active video */
+#define RB_PPUpx         11        /* right border */
+#define HB_PPUpx         (FP_PPUpx + SYNC_PPUpx + BW_PPUpx + CB_PPUpx + BP_PPUpx) /* h blank */
 /* line duration should be ~63500 ns */
-#define LINE_ns          (FP_ns + SYNC_ns + BW_ns + CB_ns + BP_ns + AV_ns)
+#define LINE_PPUpx          (FP_PPUpx + SYNC_PPUpx + BW_PPUpx + CB_PPUpx + BP_PPUpx + PS_PPUpx + LB_PPUpx + AV_PPUpx + RB_PPUpx)
 
-/* convert nanosecond offset to its corresponding point on the sampled line */
-#define ns2pos(ns)       ((ns) * CRT_HRES / LINE_ns)
+/* convert pixel offset to its corresponding point on the sampled line */
+#define PPUpx2pos(PPUpx)       ((PPUpx) * CRT_HRES / LINE_PPUpx)
 /* starting points for all the different pulses */
-#define FP_BEG           ns2pos(0)
-#define SYNC_BEG         ns2pos(FP_ns)
-#define BW_BEG           ns2pos(FP_ns + SYNC_ns)
-#define CB_BEG           ns2pos(FP_ns + SYNC_ns + BW_ns)
-#define BP_BEG           ns2pos(FP_ns + SYNC_ns + BW_ns + CB_ns)
-#define AV_BEG           ns2pos(HB_ns)
-#define AV_LEN           ns2pos(AV_ns)
+#define FP_BEG           PPUpx2pos(0)
+#define SYNC_BEG         PPUpx2pos(FP_PPUpx)
+#define BW_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx)
+#define CB_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx)
+#define BP_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx + CB_PPUpx)
+#define AV_BEG           PPUpx2pos(HB_PPUpx)
+#define AV_LEN           PPUpx2pos(AV_PPUpx)
 
 /* somewhere between 7 and 12 cycles */
 #define CB_CYCLES   10
@@ -59,11 +69,12 @@
 #define Q_FREQ           55000   /* Chroma (Q) 0.55 MHz of the 14.31818 MHz */
 
 /* IRE units (100 = 1.0V, -40 = 0.0V) */
-#define WHITE_LEVEL      100
-#define BURST_LEVEL      20
-#define BLACK_LEVEL      7
+/* https://www.nesdev.org/wiki/NTSC_video#Terminated_measurement */
+#define WHITE_LEVEL      110
+#define BURST_LEVEL      30
+#define BLACK_LEVEL      0
 #define BLANK_LEVEL      0
-#define SYNC_LEVEL      -40
+#define SYNC_LEVEL      -37
 
 #if (CRT_CHROMA_PATTERN == 1)
 /* 227.5 subcarrier cycles per line means every other line has reversed phase */
@@ -508,45 +519,45 @@ crt_2ntsc(struct CRT *v, struct NTSC_SETTINGS *s)
 
 /* generate the square wave for a given 9-bit pixel and phase */
 static int
-square_sample(int p, int phase)
+square_sample(int pixel_color, int phase)
 {
     static int active[6] = {
-        0300, 0100,
-        0500, 0400,
-        0600, 0200
+        0x0C0, 0x040,
+        0x140, 0x100,
+        0x180, 0x080
     };
-    int bri, hue, v;
+    int bri, hue, voltage;
 
-    hue = (p & 0x0f);
+    hue = (pixel_color & 0x0f);
     
     /* last two columns are black */
     if (hue >= 0x0e) {
         return 0;
     }
 
-    bri = ((p & 0x30) >> 4) * 300;
+    bri = ((pixel_color & 0x30) >> 4) * 300;
     
     switch (hue) {
         case 0:
-            v = bri + 410;
+            voltage = bri + 410;
             break;
         case 0x0d:
-            v = bri - 300;
+            voltage = bri - 300;
             break;
         default:
-            v = (((hue + phase) % 12) < 6) ? (bri + 410) : (bri - 300);
+            voltage = (((hue + phase) % 12) < 6) ? (bri + 410) : (bri - 300);
             break;
     }
 
-    if (v > 1024) {
-        v = 1024;
+    if (voltage > 1024) {
+        voltage = 1024;
     }
     /* red 0100, green 0200, blue 0400 */
-    if ((p & 0700) & active[(phase >> 1) % 6]) {
-        return (v >> 1) + (v >> 2);
+    if ((pixel_color & 0x1C0) & active[(phase >> 1) % 6]) {
+        return (voltage >> 1) + (voltage >> 2);
     }
 
-    return v;
+    return voltage;
 }
 
 extern void

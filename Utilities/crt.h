@@ -3,11 +3,15 @@
  * NTSC/CRT - integer-only NTSC video signal encoding / decoding emulation
  *
  *   by EMMIR 2018-2023
+ *   modifications for Mesen by Persune
+ *   https://github.com/LMP88959/NTSC-CRT
  *
  *   YouTube: https://www.youtube.com/@EMMIR_KC/videos
  *   Discord: https://discord.com/invite/hdYctSmyQJ
  */
 /*****************************************************************************/
+#pragma once
+
 #ifndef _CRT_H_
 #define _CRT_H_
 
@@ -24,7 +28,7 @@ extern "C" {
  *
  */
 
-#define CRT_NES_MODE 0
+#define CRT_NES_MODE 1
 #define CRT_NES_HIRES 1
 
 /* do bloom emulation (side effect: makes screen have black borders) */
@@ -34,7 +38,7 @@ extern "C" {
 /* 0 = vertical  chroma (228 chroma clocks per line) */
 /* 1 = checkered chroma (227.5 chroma clocks per line) */
 /* 2 = sawtooth  chroma (227.3 chroma clocks per line) */
-#define CRT_CHROMA_PATTERN 1
+#define CRT_CHROMA_PATTERN 2
 
 #if CRT_NES_MODE
 #undef CRT_CHROMA_PATTERN
@@ -45,7 +49,7 @@ extern "C" {
 #if (CRT_CHROMA_PATTERN == 1)
 #define CRT_CC_LINE 2275
 #elif (CRT_CHROMA_PATTERN == 2)
-#define CRT_CC_LINE 2273
+#define CRT_CC_LINE 682.0/3.0
 #else
 /* this will give the 'rainbow' effect in the famous waterfall scene */
 #define CRT_CC_LINE 2280
@@ -61,12 +65,14 @@ extern "C" {
 #else
 #define CRT_CB_FREQ     4 /* carrier frequency relative to sample rate */
 #endif
-#define CRT_HRES        (CRT_CC_LINE * CRT_CB_FREQ / 10) /* horizontal res */
+
+/* https://www.nesdev.org/wiki/NTSC_video#Scanline_Timing */
+#define CRT_HRES        int(CRT_CC_LINE * double(CRT_CB_FREQ) / 10.0) /* horizontal res */
 #define CRT_VRES        262                       /* vertical resolution */
 #define CRT_INPUT_SIZE  (CRT_HRES * CRT_VRES)
 
-#define CRT_TOP         21     /* first line with active video */
-#define CRT_BOT         261    /* final line with active video */
+#define CRT_TOP         15     /* first line with active video */
+#define CRT_BOT         255    /* final line with active video */
 #define CRT_LINES       (CRT_BOT - CRT_TOP) /* number of active video lines */
 
 struct CRT {

@@ -8,8 +8,8 @@ class Console;
 class LMP88959NtscFilter : public BaseVideoFilter
 {
 private:
-	nes_ntsc_setup_t _ntscSetup;
-	nes_ntsc_t _ntscData;
+	struct NTSC_SETTINGS _ntsc;
+	struct CRT _crt;
 	bool _keepVerticalRes = false;
 	bool _useExternalPalette = true;
 	uint8_t _palette[512 * 3];

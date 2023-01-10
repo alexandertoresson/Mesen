@@ -306,6 +306,6 @@
     <ClCompile Include="AviRecorder.cpp">
       <Filter>Avi</Filter>
     </ClCompile>
-    <ClCompile Include="crt.c" />
+    <ClCompile Include="crt.cpp" />
   </ItemGroup>
 </Project>

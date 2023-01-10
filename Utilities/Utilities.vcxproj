@@ -479,7 +479,7 @@
     <ClCompile Include="BpsPatcher.cpp" />
     <ClCompile Include="CamstudioCodec.cpp" />
     <ClCompile Include="CRC32.cpp" />
-    <ClCompile Include="crt.c" />
+    <ClCompile Include="crt.cpp" />
     <ClCompile Include="FolderUtilities.cpp" />
     <ClCompile Include="GifRecorder.cpp" />
     <ClCompile Include="HexUtilities.cpp" />
