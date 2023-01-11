@@ -50,7 +50,7 @@ BisqwitNtscFilter::BisqwitNtscFilter(shared_ptr<Console> console, int resDivider
 			} else {
 				outputBuffer += GetOverscan().GetScreenWidth() * 64 / _resDivider / _resDivider * (120 - GetOverscan().Top);
 			}
-			DecodeFrame(120, 239 - GetOverscan().Bottom, _ppuOutputBuffer, outputBuffer, ((_console->GetModel() == NesModel::NTSC ? _console->GetStartingPhase() : 0) * 4) + 327360);
+			DecodeFrame(120, 239 - GetOverscan().Bottom, outputBuffer, ((_console->GetModel() == NesModel::NTSC ? _console->GetStartingPhase() : 0) * 4) + 327360);
 
 			_workDone = true;
 		}
@@ -70,7 +70,7 @@ void BisqwitNtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 
 	_workDone = false;
 	_waitWork.Signal();
-	DecodeFrame(GetOverscan().Top, 120, ppuOutputBuffer, GetOutputBuffer(), ((_console->GetModel() == NesModel::NTSC ? _console->GetStartingPhase() : 0) * 4) + GetOverscan().Top * 341 * 8);
+	DecodeFrame(GetOverscan().Top, 120, GetOutputBuffer(), ((_console->GetModel() == NesModel::NTSC ? _console->GetStartingPhase() : 0) * 4) + GetOverscan().Top * 341 * 8);
 	while(!_workDone) {}
 }
 
@@ -218,7 +218,7 @@ void BisqwitNtscFilter::GenerateNtscSignal(int8_t *ntscSignal, int &phase, int r
 	phase += (341 - 256 - _paddingSize * 2) * _signalsPerPixel;
 }
 
-void BisqwitNtscFilter::DecodeFrame(int startRow, int endRow, uint16_t *ppuOutputBuffer, uint32_t* outputBuffer, int startPhase)
+void BisqwitNtscFilter::DecodeFrame(int startRow, int endRow, uint32_t* outputBuffer, int startPhase)
 {
 	int pixelsPerCycle = 8 / _resDivider;
 	int phase = startPhase;

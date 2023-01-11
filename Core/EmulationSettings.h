@@ -244,6 +244,8 @@ struct NtscFilterSettings
 	double DecodeMatrixQG = -0.647f;
 	double DecodeMatrixIB = -1.105f;
 	double DecodeMatrixQB = 1.702f;
+
+	double Noise = 0;
 };
 
 enum class RamPowerOnState

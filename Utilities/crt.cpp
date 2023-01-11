@@ -346,6 +346,7 @@ crt_reset(struct CRT *v)
     v->contrast = 179;
     v->black_point = 0;
     v->white_point = 100;
+    v->noise = 0;
     v->hsync = 0;
     v->vsync = 0;
 }
@@ -768,9 +769,9 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
                 }
             }
         }
-    }   
-    
-    phase = 0;
+    }
+
+    phase = s->starting_phase * 4;
 
     for (y = lo; y < desth; y++) {
         int sy = (y * s->h) / desth;
@@ -803,7 +804,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
 #define VSYNC_WINDOW 8
 
 extern void
-crt_draw(struct CRT *v, int noise)
+crt_draw(struct CRT *v)
 {
     struct {
         int y, i, q;
@@ -832,7 +833,7 @@ crt_draw(struct CRT *v, int noise)
         rn = (214019 * rn + 140327895);
 
         /* signal + noise */
-        s = v->analog[i] + (((((rn >> 16) & 0xff) - 0x7f) * noise) >> 8);
+        s = v->analog[i] + (((((rn >> 16) & 0xff) - 0x7f) * v->noise) >> 8);
         if (s >  127) { s =  127; }
         if (s < -127) { s = -127; }
         v->inp[i] = s;
@@ -876,7 +877,7 @@ vsync_found:
     /* if vsync signal was in second half of line, odd field */
     field = (j > (CRT_HRES / 2));
 #if CRT_DO_BLOOM
-    max_e = (128 + (noise / 2)) * AV_LEN;
+    max_e = (128 + (v->noise / 2)) * AV_LEN;
     prev_e = (16384 / 8);
 #endif
     /* ratio of output height to active video lines in the signal */
@@ -1010,7 +1011,7 @@ vsync_found:
             if (g > 255) g = 255;
             if (b > 255) b = 255;
             
-            aa = (r << 16 | g << 8 | b);
+            aa = 0xFF000000 | (r << 16 | g << 8 | b);
             bb = *cL;
             /* blend with previous color there */
             *cL++ = (((aa & 0xfefeff) >> 1) + ((bb & 0xfefeff) >> 1));

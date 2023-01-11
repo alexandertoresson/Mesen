@@ -46,7 +46,7 @@ private:
 	void NtscDecodeLine(int width, const int8_t* signal, uint32_t* target, int phase0);
 	
 	void GenerateNtscSignal(int8_t *ntscSignal, int &phase, int rowNumber);
-	void DecodeFrame(int startRow, int endRow, uint16_t *ppuOutputBuffer, uint32_t* outputBuffer, int startPhase);
+	void DecodeFrame(int startRow, int endRow, uint32_t* outputBuffer, int startPhase);
 	void OnBeforeApplyFilter();
 
 public:

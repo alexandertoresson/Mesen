@@ -6,168 +6,105 @@
 #include "EmulationSettings.h"
 #include "Console.h"
 
-LMP88959NtscFilter::LMP88959NtscFilter(shared_ptr<Console> console) : BaseVideoFilter(console)
+LMP88959NtscFilter::LMP88959NtscFilter(shared_ptr<Console> console, int resDivider) : BaseVideoFilter(console)
 {
-	memset(_palette, 0, sizeof(_palette));
-	memset(&_ntscData, 0, sizeof(_ntscData));
-	_ntscSetup = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	_ntscBuffer = new uint32_t[NES_NTSC_OUT_WIDTH(256) * 240]();
+	_resDivider = resDivider;
+	_frameBuffer = new uint32_t[(256) * 240]();
 }
 
 FrameInfo LMP88959NtscFilter::GetFrameInfo()
 {
 	OverscanDimensions overscan = GetOverscan();
-	uint32_t overscanLeft = overscan.Left > 0 ? NES_NTSC_OUT_WIDTH(overscan.Left) : 0;
-	uint32_t overscanRight = overscan.Right > 0 ? NES_NTSC_OUT_WIDTH(overscan.Right) : 0;
-
-	if(_keepVerticalRes) {
-		return {
-			(NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) - overscanLeft - overscanRight),
-			(PPU::ScreenHeight - overscan.Top - overscan.Bottom),
-			NES_NTSC_OUT_WIDTH(PPU::ScreenWidth),
-			PPU::ScreenHeight,
-			4
-		};
-	} else {
-		return {
-			NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) - overscanLeft - overscanRight,
-			(PPU::ScreenHeight - overscan.Top - overscan.Bottom) * 2,
-			NES_NTSC_OUT_WIDTH(PPU::ScreenWidth),
-			PPU::ScreenHeight * 2,
-			4
-		};
+	if (_keepVerticalRes) {
+		return { overscan.GetScreenWidth() * 8 / _resDivider, overscan.GetScreenHeight(), PPU::ScreenWidth, PPU::ScreenHeight, 4 };
+	}
+	else {
+		return { overscan.GetScreenWidth() * 8 / _resDivider, overscan.GetScreenHeight() * 8 / _resDivider, PPU::ScreenWidth, PPU::ScreenHeight, 4 };
 	}
 }
 
 void LMP88959NtscFilter::OnBeforeApplyFilter()
 {
-	bool paletteChanged = false;
-	uint32_t* palette = _console->GetSettings()->GetRgbPalette();
-	for(int i = 0, len = _console->GetSettings()->IsFullColorPalette() ? 512 : 64; i < len; i++) {
-		uint8_t r = (palette[i] >> 16) & 0xFF;
-		uint8_t g = (palette[i] >> 8) & 0xFF;
-		uint8_t b = palette[i] & 0xFF;
-
-		if(_palette[i * 3] != r || _palette[i * 3 + 1] != g || _palette[i * 3 + 2] != b) {
-			paletteChanged = true;
-
-			_palette[i * 3] = (palette[i] >> 16) & 0xFF;
-			_palette[i * 3 + 1] = (palette[i] >> 8) & 0xFF;
-			_palette[i * 3 + 2] = palette[i] & 0xFF;
-		}
-	}
-
 	_ntscBorder = (_console->GetModel() == NesModel::NTSC);
 
 	PictureSettings pictureSettings = _console->GetSettings()->GetPictureSettings();
 	NtscFilterSettings ntscSettings = _console->GetSettings()->GetNtscFilterSettings();
 
 	_keepVerticalRes = ntscSettings.KeepVerticalResolution;
-	if (ntscSettings.UseExternalPalette != _useExternalPalette) {
-		paletteChanged = true;
-		_useExternalPalette = ntscSettings.UseExternalPalette;
-	}
 
-	if(
-		paletteChanged ||
-		_ntscSetup.hue != pictureSettings.Hue ||
-		_ntscSetup.saturation != pictureSettings.Saturation ||
-		_ntscSetup.brightness != pictureSettings.Brightness ||
-		_ntscSetup.contrast != pictureSettings.Contrast ||
-		_ntscSetup.artifacts != ntscSettings.Artifacts ||
-		_ntscSetup.bleed != ntscSettings.Bleed ||
-		_ntscSetup.fringing != ntscSettings.Fringing ||
-		_ntscSetup.gamma != ntscSettings.Gamma ||
-		(_ntscSetup.merge_fields == 1) != ntscSettings.MergeFields ||
-		_ntscSetup.resolution != ntscSettings.Resolution ||
-		_ntscSetup.sharpness != ntscSettings.Sharpness
-		) {
-		_ntscSetup.hue = pictureSettings.Hue;
-		_ntscSetup.saturation = pictureSettings.Saturation;
-		_ntscSetup.brightness = pictureSettings.Brightness;
-		_ntscSetup.contrast = pictureSettings.Contrast;
+	crt_init(&_crt, GetOverscan().GetScreenWidth() * 8 / _resDivider, GetOverscan().GetScreenHeight() * 8 / _resDivider, (int*)(_frameBuffer));
 
-		_ntscSetup.artifacts = ntscSettings.Artifacts;
-		_ntscSetup.bleed = ntscSettings.Bleed;
-		_ntscSetup.fringing = ntscSettings.Fringing;
-		_ntscSetup.gamma = ntscSettings.Gamma;
-		_ntscSetup.merge_fields = (int)ntscSettings.MergeFields;
-		_ntscSetup.resolution = ntscSettings.Resolution;
-		_ntscSetup.sharpness = ntscSettings.Sharpness;
+	_crt.hue = static_cast<int>(pictureSettings.Hue * 180.0);
+	_crt.saturation = static_cast<int>(((pictureSettings.Saturation + 1.0) / 2.0) * 50.0);
+	_crt.brightness = static_cast<int>(pictureSettings.Brightness * 100.0);
+	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
+	_crt.noise = static_cast<int>(ntscSettings.Noise * 500.0);
 
-		float decodermatrix[6] = {
-			(float)ntscSettings.DecodeMatrixIR,
-			(float)ntscSettings.DecodeMatrixQR,
-			(float)ntscSettings.DecodeMatrixIG,
-			(float)ntscSettings.DecodeMatrixQG,
-			(float)ntscSettings.DecodeMatrixIB,
-			(float)ntscSettings.DecodeMatrixQB
-		};
+	_nesNTSC.data = nullptr;
+	_nesNTSC.w = static_cast<int>(PPU::ScreenWidth);
+	_nesNTSC.h = static_cast<int>(PPU::ScreenHeight);
+	_nesNTSC.raw = 1;
+	_nesNTSC.as_color = 1;
+	_nesNTSC.dot_crawl_offset = 0;
+	_nesNTSC.starting_phase = 0;
+	_nesNTSC.cc[0] = -1;
+	_nesNTSC.cc[1] = 0;
+	_nesNTSC.cc[2] = 1;
+	_nesNTSC.cc[3] = 0;
+	_nesNTSC.ccs = 1;
 
-		_ntscSetup.decoder_matrix = decodermatrix;
-
-		if (_useExternalPalette) {
-			if (_console->GetSettings()->IsFullColorPalette()) {
-				_ntscSetup.base_palette = nullptr;
-				_ntscSetup.palette = _palette;
-			}
-			else {
-				_ntscSetup.base_palette = _palette;
-				_ntscSetup.palette = nullptr;
-			}
-		}
-		else {
-			_ntscSetup.base_palette = nullptr;
-			_ntscSetup.palette = nullptr;
-		}
-
-		nes_ntsc_init(&_ntscData, &_ntscSetup);
-	}
 }
 
 void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 {
 	uint8_t phase = _console->GetModel() == NesModel::NTSC ? _console->GetStartingPhase() : 0;
-	for (int i = 0; i < 240; i++) {
-		nes_ntsc_blit(&_ntscData,
-			// input += in_row_width;
-			ppuOutputBuffer + PPU::ScreenWidth * i,
-			_ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F,
-			PPU::ScreenWidth,
-			phase,
-			PPU::ScreenWidth,
-			1,
-			// rgb_out = (char*) rgb_out + out_pitch;
-			reinterpret_cast<char*>(_ntscBuffer) + (NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) * 4 * i),
-			NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) * 4);
+	//for (int i = 0; i < 240; i++) {
+	//	nes_ntsc_blit(&_ntscData,
+	//		// input += in_row_width;
+	//		ppuOutputBuffer + PPU::ScreenWidth * i,
+	//		_ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F,
+	//		PPU::ScreenWidth,
+	//		phase,
+	//		PPU::ScreenWidth,
+	//		1,
+	//		// rgb_out = (char*) rgb_out + out_pitch;
+	//		reinterpret_cast<char*>(_frameBuffer) + (NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) * 4 * i),
+	//		NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) * 4);
 
-		phase = (phase + 1) % 3;
-	}
-	GenerateArgbFrame(_ntscBuffer);
+	//	phase = (phase + 1) % 3;
+	//}
+	_nesNTSC.data = (unsigned short*)(ppuOutputBuffer);
+	_nesNTSC.dot_crawl_offset = phase;
+	_nesNTSC.starting_phase = phase;
+
+	crt_nes2ntsc(&_crt, &_nesNTSC);
+	crt_draw(&_crt);
+
+	GenerateArgbFrame(_frameBuffer);
 }
 
-void LMP88959NtscFilter::GenerateArgbFrame(uint32_t *ntscBuffer)
+void LMP88959NtscFilter::GenerateArgbFrame(uint32_t *frameBuffer)
 {
 	uint32_t* outputBuffer = GetOutputBuffer();
 	OverscanDimensions overscan = GetOverscan();
-	int overscanLeft = overscan.Left > 0 ? NES_NTSC_OUT_WIDTH(overscan.Left) : 0;
-	int overscanRight = overscan.Right > 0 ? NES_NTSC_OUT_WIDTH(overscan.Right) : 0;
-	int rowWidth = NES_NTSC_OUT_WIDTH(PPU::ScreenWidth);
+	int overscanLeft = overscan.Left > 0 ? (overscan.Left) : 0;
+	int overscanRight = overscan.Right > 0 ? (overscan.Right) : 0;
+	int rowWidth = (PPU::ScreenWidth);
 	int rowWidthOverscan = rowWidth - overscanLeft - overscanRight;
 
 	if(_keepVerticalRes) {
-		ntscBuffer += rowWidth * overscan.Top + overscanLeft;
+		frameBuffer += rowWidth * overscan.Top + overscanLeft;
 		for(uint32_t i = 0, len = overscan.GetScreenHeight(); i < len; i++) {
-			memcpy(outputBuffer, ntscBuffer, rowWidthOverscan * sizeof(uint32_t));
+			memcpy(outputBuffer, frameBuffer, rowWidthOverscan * sizeof(uint32_t));
 			outputBuffer += rowWidthOverscan;
-			ntscBuffer += rowWidth;
+			frameBuffer += rowWidth;
 		}
 	} else {
 		double scanlineIntensity = 1.0 - _console->GetSettings()->GetPictureSettings().ScanlineIntensity;
 		bool verticalBlend = _console->GetSettings()->GetNtscFilterSettings().VerticalBlend;
 
 		for(int y = PPU::ScreenHeight - 1 - overscan.Bottom; y >= (int)overscan.Top; y--) {
-			uint32_t const* in = ntscBuffer + y * rowWidth;
+			uint32_t const* in = frameBuffer + y * rowWidth;
 			uint32_t* out = outputBuffer + (y - overscan.Top) * 2 * rowWidthOverscan;
 
 			if(verticalBlend || scanlineIntensity < 1.0) {
@@ -209,5 +146,5 @@ void LMP88959NtscFilter::GenerateArgbFrame(uint32_t *ntscBuffer)
 
 LMP88959NtscFilter::~LMP88959NtscFilter()
 {
-	delete[] _ntscBuffer;
+	delete[] _frameBuffer;
 }
