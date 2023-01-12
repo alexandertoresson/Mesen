@@ -70,7 +70,7 @@
 
 /* IRE units (100 = 1.0V, -40 = 0.0V) */
 /* https://www.nesdev.org/wiki/NTSC_video#Terminated_measurement */
-#define WHITE_LEVEL      110
+#define WHITE_LEVEL      100
 #define BURST_LEVEL      30
 #define BLACK_LEVEL      0
 #define BLANK_LEVEL      0
@@ -343,7 +343,7 @@ crt_reset(struct CRT *v)
     v->hue = 0;
     v->saturation = 18;
     v->brightness = 0;
-    v->contrast = 179;
+    v->contrast = 180;
     v->black_point = 0;
     v->white_point = 100;
     v->noise = 0;
@@ -771,7 +771,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
         }
     }
 
-    phase = s->starting_phase * 4;
+    phase = 0;
 
     for (y = lo; y < desth; y++) {
         int sy = (y * s->h) / desth;
@@ -800,8 +800,8 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
 }
 
 /* search windows, in samples */
-#define HSYNC_WINDOW 8
-#define VSYNC_WINDOW 8
+#define HSYNC_WINDOW 4
+#define VSYNC_WINDOW 6
 
 extern void
 crt_draw(struct CRT *v)
@@ -1011,7 +1011,7 @@ vsync_found:
             if (g > 255) g = 255;
             if (b > 255) b = 255;
             
-            aa = 0xFF000000 | (r << 16 | g << 8 | b);
+            aa = (r << 16 | g << 8 | b);
             bb = *cL;
             /* blend with previous color there */
             *cL++ = (((aa & 0xfefeff) >> 1) + ((bb & 0xfefeff) >> 1));

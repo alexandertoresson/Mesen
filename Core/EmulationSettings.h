@@ -168,6 +168,9 @@ enum class VideoFilterType
 	Prescale8x = 23,
 	Prescale10x = 24,
 	Raw = 25,
+	LMP88959NtscQuarterRes = 26,
+	LMP88959NtscHalfRes = 27,
+	LMP88959Ntsc = 28,
 	HdPack = 999
 };
 
@@ -1254,7 +1257,8 @@ public:
 		bool verticalBlend,
 		bool keepVerticalResolution,
 		bool colorimetryCorrection,
-		bool useExternalPalette)
+		bool useExternalPalette,
+		double Noise)
 	{
 		_ntscFilterSettings.Artifacts = artifacts;
 		_ntscFilterSettings.Bleed = bleed;
@@ -1281,6 +1285,7 @@ public:
 		_ntscFilterSettings.VerticalBlend = verticalBlend;
 		_ntscFilterSettings.KeepVerticalResolution = keepVerticalResolution;
 		_ntscFilterSettings.ColorimetryCorrection = colorimetryCorrection;
+		_ntscFilterSettings.Noise = Noise;
 	}
 
 	NtscFilterSettings GetNtscFilterSettings()

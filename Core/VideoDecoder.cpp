@@ -5,6 +5,7 @@
 #include "DefaultVideoFilter.h"
 #include "RawVideoFilter.h"
 #include "BisqwitNtscFilter.h"
+#include "LMP88959NtscFilter.h"
 #include "NtscFilter.h"
 #include "HdVideoFilter.h"
 #include "ScaleFilter.h"
@@ -73,6 +74,9 @@ void VideoDecoder::UpdateVideoFilter()
 			case VideoFilterType::BisqwitNtsc: _videoFilter.reset(new BisqwitNtscFilter(_console, 1)); break;
 			case VideoFilterType::BisqwitNtscHalfRes: _videoFilter.reset(new BisqwitNtscFilter(_console, 2)); break;
 			case VideoFilterType::BisqwitNtscQuarterRes: _videoFilter.reset(new BisqwitNtscFilter(_console, 4)); break;
+			case VideoFilterType::LMP88959Ntsc: _videoFilter.reset(new LMP88959NtscFilter(_console, 1)); break;
+			case VideoFilterType::LMP88959NtscHalfRes: _videoFilter.reset(new LMP88959NtscFilter(_console, 2)); break;
+			case VideoFilterType::LMP88959NtscQuarterRes: _videoFilter.reset(new LMP88959NtscFilter(_console, 4)); break;
 			case VideoFilterType::Raw: _videoFilter.reset(new RawVideoFilter(_console)); break;
 			default: _scaleFilter = ScaleFilter::GetScaleFilter(_videoFilterType); break;
 		}

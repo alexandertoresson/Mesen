@@ -49,7 +49,7 @@ extern "C" {
 #if (CRT_CHROMA_PATTERN == 1)
 #define CRT_CC_LINE 2275
 #elif (CRT_CHROMA_PATTERN == 2)
-#define CRT_CC_LINE 682.0/3.0
+#define CRT_CC_LINE 2273
 #else
 /* this will give the 'rainbow' effect in the famous waterfall scene */
 #define CRT_CC_LINE 2280
@@ -67,7 +67,7 @@ extern "C" {
 #endif
 
 /* https://www.nesdev.org/wiki/NTSC_video#Scanline_Timing */
-#define CRT_HRES        int(CRT_CC_LINE * double(CRT_CB_FREQ) / 10.0) /* horizontal res */
+#define CRT_HRES        (CRT_CC_LINE * CRT_CB_FREQ / 10) /* horizontal res */
 #define CRT_VRES        262                       /* vertical resolution */
 #define CRT_INPUT_SIZE  (CRT_HRES * CRT_VRES)
 
@@ -81,7 +81,7 @@ struct CRT {
     int hsync, vsync; /* used internally to keep track of sync over frames */
     int hue, brightness, contrast, saturation; /* common monitor settings */
     int black_point, white_point; /* user-adjustable */
-	 int noise; /* noise level */
+    int noise; /* noise level */
     int outw, outh; /* output width/height */
     int *out; /* output image */
 };
@@ -142,13 +142,12 @@ struct NES_NTSC_SETTINGS {
     int raw;        /* 0 = scale image to fit monitor, 1 = don't scale */
     int as_color;   /* 0 = monochrome, 1 = full color */
     int dot_crawl_offset; /* 0, 1, or 2 */
-    int starting_phase; /* 0, 1, or 2 */
     /* NOTE: NES mode is always progressive */
     /* color carrier sine wave.
      * ex: { 0, 1, 0, -1 }
      * ex: { 1, 0, -1, 0 }
      */
-    int cc[4];      
+    int cc[4];
     /* scale value for values in cc
      * for example, if using { 0, 1, 0, -1 }, ccs should be 1.
      * however, if using { 0, 16, 0, -16 }, ccs should be 16.

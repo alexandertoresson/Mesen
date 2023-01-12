@@ -11,12 +11,11 @@ private:
 	struct NES_NTSC_SETTINGS _nesNTSC;
 	struct CRT _crt;
 	bool _keepVerticalRes = false;
-	uint8_t _palette[512 * 3];
 	uint32_t* _frameBuffer;
 	bool _ntscBorder = true;
 	int _resDivider = 1;
 
-	void GenerateArgbFrame(uint32_t *outputBuffer);
+	void RecursiveBlend(int iterationCount, uint64_t* output, uint64_t* currentLine, uint64_t* nextLine, int pixelsPerCycle, bool verticalBlend);
 
 protected:
 	void OnBeforeApplyFilter();

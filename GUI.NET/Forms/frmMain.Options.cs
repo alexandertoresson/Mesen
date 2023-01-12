@@ -370,5 +370,20 @@ namespace Mesen.GUI.Forms
 		{
 			SetVideoFilter(VideoFilterType.BisqwitNtscQuarterRes);
 		}
+
+		private void mnuNtscLMP88959FullFilter_Click(object sender, EventArgs e)
+		{
+			SetVideoFilter(VideoFilterType.LMP88959Ntsc);
+		}
+
+		private void mnuNtscLMP88959HalfFilter_Click(object sender, EventArgs e)
+		{
+			SetVideoFilter(VideoFilterType.LMP88959NtscHalfRes);
+		}
+
+		private void mnuNtscLMP88959QuarterFilter_Click(object sender, EventArgs e)
+		{
+			SetVideoFilter(VideoFilterType.LMP88959NtscQuarterRes);
+		}
 	}
 }
