@@ -509,7 +509,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
         }
     }
 
-    phase = (s->dot_crawl_offset % 3) * 4;
+    phase = 3;
 
     for (y = (lo - 3); y < desth; y++) {
         int sy = (y * s->h) / desth;
