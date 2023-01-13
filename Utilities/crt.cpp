@@ -51,13 +51,13 @@
 /* convert pixel offset to its corresponding point on the sampled line */
 #define PPUpx2pos(PPUpx)       ((PPUpx) * CRT_HRES / LINE_PPUpx)
 /* starting points for all the different pulses */
-#define FP_BEG           PPUpx2pos(0)
-#define SYNC_BEG         PPUpx2pos(FP_PPUpx)
-#define BW_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx)
-#define CB_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx)
-#define BP_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx + CB_PPUpx)
-#define AV_BEG           PPUpx2pos(HB_PPUpx)
-#define AV_LEN           PPUpx2pos(AV_PPUpx)
+#define FP_BEG           PPUpx2pos(0)                                           /* front porch point */
+#define SYNC_BEG         PPUpx2pos(FP_PPUpx)                                    /* sync tip point */
+#define BW_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx)                       /* breezeway point */
+#define CB_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx)            /* color burst point */
+#define BP_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx + CB_PPUpx) /* back porch point */
+#define AV_BEG           PPUpx2pos(HB_PPUpx)                                    /* active video point */
+#define AV_LEN           PPUpx2pos(AV_PPUpx)                                    /* active video length */
 
 /* somewhere between 7 and 12 cycles */
 #define CB_CYCLES   10
@@ -373,259 +373,6 @@ crt_init(struct CRT *v, int w, int h, int *out)
     init_iir(&iirQ, L_FREQ, Q_FREQ);
 }
 
-extern void
-crt_2ntsc(struct CRT *v, struct NTSC_SETTINGS *s)
-{
-    int x, y, xo, yo;
-    int destw = AV_LEN;
-    int desth = ((CRT_LINES * 64500) >> 16);
-    int n;
-#if CRT_DO_BLOOM
-    if (s->raw) {
-        destw = s->w;
-        desth = s->h;
-        if (destw > ((AV_LEN * 55500) >> 16)) {
-            destw = ((AV_LEN * 55500) >> 16);
-        }
-        if (desth > ((CRT_LINES * 63500) >> 16)) {
-            desth = ((CRT_LINES * 63500) >> 16);
-        }
-    } else {
-        destw = (AV_LEN * 55500) >> 16;
-        desth = (CRT_LINES * 63500) >> 16;
-    }
-#else
-    if (s->raw) {
-        destw = s->w;
-        desth = s->h;
-        if (destw > AV_LEN) {
-            destw = AV_LEN;
-        }
-        if (desth > ((CRT_LINES * 64500) >> 16)) {
-            desth = ((CRT_LINES * 64500) >> 16);
-        }
-    }
-#endif
-
-    xo = AV_BEG  + 4 + (AV_LEN    - destw) / 2;
-    yo = CRT_TOP + 4 + (CRT_LINES - desth) / 2;
-    
-    s->field &= 1;
-    
-    /* align signal */
-    xo = (xo & ~3);
-    
-    for (n = 0; n < CRT_VRES; n++) {
-        int t; /* time */
-        signed char *line = &v->analog[n * CRT_HRES];
-        
-        t = LINE_BEG;
-
-        if (n <= 3 || (n >= 7 && n <= 9)) {
-            /* equalizing pulses - small blips of sync, mostly blank */
-            while (t < (4   * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (50  * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-            while (t < (54  * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (100 * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-        } else if (n >= 4 && n <= 6) {
-            int even[4] = { 46, 50, 96, 100 };
-            int odd[4] =  { 4, 50, 96, 100 };
-            int *offs = even;
-            if (s->field == 1) {
-                offs = odd;
-            }
-            /* vertical sync pulse - small blips of blank, mostly sync */
-            while (t < (offs[0] * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (offs[1] * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-            while (t < (offs[2] * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (offs[3] * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-        } else {
-            /* video line */
-            while (t < SYNC_BEG) line[t++] = BLANK_LEVEL; /* FP */
-            while (t < BW_BEG)   line[t++] = SYNC_LEVEL;  /* SYNC */
-            while (t < AV_BEG)   line[t++] = BLANK_LEVEL; /* BW + CB + BP */
-            if (n < CRT_TOP) {
-                while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
-            }
-            if (s->as_color) {
-                int cb;
-                /* CB_CYCLES of color burst at 3.579545 Mhz */
-                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); t++) {
-                    cb = s->cc[(t + 0) & 3];
-                    line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
-                }
-            }
-        }
-    }
-
-    for (y = 0; y < desth; y++) {
-        int field_offset;
-        int syA, syB;
-        
-        field_offset = (s->field * s->h + desth) / desth / 2;
-        syA = (y * s->h) / desth;
-        syB = (y * s->h + desth / 2) / desth;
-    
-        syA += field_offset;
-        syB += field_offset;
-
-        if (syA >= s->h) syA = s->h;
-        if (syB >= s->h) syB = s->h;
-        
-        syA *= s->w;
-        syB *= s->w;
-        
-        reset_iir(&iirY);
-        reset_iir(&iirI);
-        reset_iir(&iirQ);
-        
-        for (x = 0; x < destw; x++) {
-            int fy, fi, fq;
-            int pA, pB;
-            int rA, gA, bA;
-            int rB, gB, bB;
-            int sx, ph;
-            int ire; /* composite signal */
-
-            sx = (x * s->w) / destw;
-            pA = s->rgb[sx + syA];
-            pB = s->rgb[sx + syB];
-            rA = (pA >> 16) & 0xff;
-            gA = (pA >>  8) & 0xff;
-            bA = (pA >>  0) & 0xff;
-            rB = (pB >> 16) & 0xff;
-            gB = (pB >>  8) & 0xff;
-            bB = (pB >>  0) & 0xff;
-
-            /* RGB to YIQ blend with potential pixel below */
-            fy = (19595 * rA + 38470 * gA +  7471 * bA
-                + 19595 * rB + 38470 * gB +  7471 * bB) >> 15;
-            fi = (39059 * rA - 18022 * gA - 21103 * bA
-                + 39059 * rB - 18022 * gB - 21103 * bB) >> 15;
-            fq = (13894 * rA - 34275 * gA + 20382 * bA
-                + 13894 * rB - 34275 * gB + 20382 * bB) >> 15;
-            ph = CC_PHASE(y + yo);
-            ire = BLACK_LEVEL + v->black_point;
-            /* bandlimit Y,I,Q */
-            fy = iirf(&iirY, fy);
-            fi = iirf(&iirI, fi) * ph * s->cc[(x + 0) & 3] / s->ccs;
-            fq = iirf(&iirQ, fq) * ph * s->cc[(x + 3) & 3] / s->ccs;
-            ire += (fy + fi + fq) * (WHITE_LEVEL * v->white_point / 100) >> 10;
-            if (ire < 0)   ire = 0;
-            if (ire > 110) ire = 110;
-
-            v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
-        }
-    }
-}
-
-extern void
-crt_2ntscFS(struct CRT *v, struct NTSC_SETTINGS *s)
-{
-    int x, y, xo, yo;
-    int destw = AV_LEN;
-    int desth = CRT_LINES;
-    int n;
-
-    xo = AV_BEG;
-    yo = CRT_TOP;
-    
-    s->field &= 1;
-    
-    /* align signal */
-    xo = (xo & ~3);
-    
-    for (n = 0; n < CRT_VRES; n++) {
-        int t; /* time */
-        signed char *line = &v->analog[n * CRT_HRES];
-        
-        t = LINE_BEG;
-
-        if (n <= 3 || (n >= 7 && n <= 9)) {
-            /* equalizing pulses - small blips of sync, mostly blank */
-            while (t < (4   * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (50  * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-            while (t < (54  * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (100 * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-        } else if (n >= 4 && n <= 6) {
-            int even[4] = { 46, 50, 96, 100 };
-            int odd[4] =  { 4, 50, 96, 100 };
-            int *offs = even;
-            if (s->field == 1) {
-                offs = odd;
-            }
-            /* vertical sync pulse - small blips of blank, mostly sync */
-            while (t < (offs[0] * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (offs[1] * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-            while (t < (offs[2] * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (offs[3] * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-        } else {
-            /* video line */
-            while (t < SYNC_BEG) line[t++] = BLANK_LEVEL; /* FP */
-            while (t < BW_BEG)   line[t++] = SYNC_LEVEL;  /* SYNC */
-            while (t < AV_BEG)   line[t++] = BLANK_LEVEL; /* BW + CB + BP */
-            if (n < CRT_TOP) {
-                while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
-            }
-            if (s->as_color) {
-                int cb;
-                                
-                /* CB_CYCLES of color burst at 3.579545 Mhz */
-                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); t++) {
-                    cb = s->cc[(t + 0) & 3];
-                    line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
-                }
-            }
-        }
-    }
-
-    for (y = 0; y < desth; y++) {
-        int field_offset;
-        int sy;
-        
-        field_offset = (s->field * s->h + desth) / desth / 2;
-        sy = (y * s->h) / desth;
-    
-        sy += field_offset;
-
-        if (sy >= s->h) sy = s->h;
-        
-        sy *= s->w;
-        
-        reset_iir(&iirY);
-        reset_iir(&iirI);
-        reset_iir(&iirQ);
-        
-        for (x = 0; x < destw; x++) {
-            int fy, fi, fq;
-            int pA, rA, gA, bA;
-            int sx, ph;
-            int ire; /* composite signal */
-
-            sx = (x * s->w) / destw;
-            pA = s->rgb[sx + sy];
-            rA = (pA >> 16) & 0xff;
-            gA = (pA >>  8) & 0xff;
-            bA = (pA >>  0) & 0xff;
-
-            fy = (19595 * rA + 38470 * gA +  7471 * bA) >> 14;
-            fi = (39059 * rA - 18022 * gA - 21103 * bA) >> 14;
-            fq = (13894 * rA - 34275 * gA + 20382 * bA) >> 14;
-            ph = CC_PHASE(y + yo);
-            ire = BLACK_LEVEL + v->black_point;
-            /* bandlimit Y,I,Q */
-            fy = iirf(&iirY, fy);
-            fi = iirf(&iirI, fi) * ph * s->cc[(x + 0) & 3] / s->ccs;
-            fq = iirf(&iirQ, fq) * ph * s->cc[(x + 3) & 3] / s->ccs;
-            ire += (fy + fi + fq) * (WHITE_LEVEL * v->white_point / 100) >> 10;
-            if (ire < 0)   ire = 0;
-            if (ire > 110) ire = 110;
-
-            v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
-        }
-    }
-}
-
 /* generate the square wave for a given 9-bit pixel and phase */
 static int
 square_sample(int pixel_color, int phase)
@@ -705,8 +452,8 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
     }
 #endif
 
-    xo = AV_BEG  + 4 + (AV_LEN    - destw) / 2;
-    yo = CRT_TOP + 4 + (CRT_LINES - desth) / 2;
+    xo = AV_BEG;
+    yo = CRT_TOP;
         
     /* align signal */
     xo = (xo & ~3);
@@ -727,7 +474,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
     }
 #else
     lo = (s->dot_crawl_offset % 3); /* line offset to match color burst */
-    po = lo; /* phase offset for color burst */
+    po = lo;
     if (lo == 1) {
         lo = 3;
     }
@@ -738,42 +485,33 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
         
         t = LINE_BEG;
 
-        if (n <= 3 || (n >= 7 && n <= 9)) {
-            /* equalizing pulses - small blips of sync, mostly blank */
-            while (t < (4   * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (50  * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-            while (t < (54  * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (100 * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-        } else if (n >= 4 && n <= 6) {
-            int even[4] = { 46, 50, 96, 100 };
-            int *offs = even; /* always progressive */
-            /* vertical sync pulse - small blips of blank, mostly sync */
-            while (t < (offs[0] * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (offs[1] * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
-            while (t < (offs[2] * CRT_HRES / 100)) line[t++] = SYNC_LEVEL;
-            while (t < (offs[3] * CRT_HRES / 100)) line[t++] = BLANK_LEVEL;
+        // vertical sync scanlines
+        if (n >= 259 && n <= CRT_VRES) {
+           while (t < SYNC_BEG) line[t++] = BLANK_LEVEL; /* FP */
+           while (t < PPUpx2pos(327)) line[t++] = SYNC_LEVEL; /* sync separator */
+           while (t < CRT_HRES) line[t++] = BLANK_LEVEL; /* blank */
         } else {
-            /* video line */
+            /* prerender/postrender/video scanlines */
             while (t < SYNC_BEG) line[t++] = BLANK_LEVEL; /* FP */
-            while (t < BW_BEG)   line[t++] = SYNC_LEVEL;  /* SYNC */
-            while (t < AV_BEG)   line[t++] = BLANK_LEVEL; /* BW + CB + BP */
-            if (n < CRT_TOP) {
-                while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
-            }
-            if (s->as_color) {
+            while (t < BW_BEG) line[t++] = SYNC_LEVEL;  /* SYNC */
+            while (t < AV_BEG) { /* BW + CB + BP */
+                while (t < CB_BEG) line[t++] = BLANK_LEVEL;
                 int cb;
                 /* CB_CYCLES of color burst at 3.579545 Mhz */
-                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); t++) {
+                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0)); t++) {
                     cb = s->cc[(t + po) & 3];
                     line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
                 }
+                while (t < AV_BEG) line[t++] = BLANK_LEVEL;
+                line[t++] = BLANK_LEVEL;
             }
+            while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
         }
     }
 
-    phase = 0;
+    phase = (s->dot_crawl_offset % 3) * 4;
 
-    for (y = lo; y < desth; y++) {
+    for (y = (lo - 3); y < desth; y++) {
         int sy = (y * s->h) / desth;
         if (sy >= s->h) sy = s->h;
         
@@ -789,8 +527,6 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             ire += square_sample(p, phase + 2);
             ire += square_sample(p, phase + 3);
             ire = (ire * (WHITE_LEVEL * v->white_point / 100)) >> 12;
-            if (ire < 0)   ire = 0;
-            if (ire > 110) ire = 110;
             v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
             phase += 3;
         }
@@ -800,8 +536,8 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
 }
 
 /* search windows, in samples */
-#define HSYNC_WINDOW 4
-#define VSYNC_WINDOW 6
+#define HSYNC_WINDOW 8
+#define VSYNC_WINDOW 8
 
 extern void
 crt_draw(struct CRT *v)
@@ -872,7 +608,7 @@ vsync_found:
 #if CRT_DO_VSYNC
     v->vsync = line; /* vsync found (or gave up) at this line */
 #else
-    v->vsync = 0;
+    v->vsync = 4;
 #endif
     /* if vsync signal was in second half of line, odd field */
     field = (j > (CRT_HRES / 2));
@@ -921,7 +657,7 @@ vsync_found:
 #if CRT_DO_HSYNC
         v->hsync = POSMOD(i + v->hsync, CRT_HRES);
 #else
-        v->hsync = 0;
+        v->hsync = 1;
 #endif
        
         sig = v->inp + ln + (v->hsync & ~3); /* burst @ 1/CB_FREQ sample rate */
@@ -930,9 +666,9 @@ vsync_found:
             int n = sig[i];                   /* mixed with the new sample */
             ccref[i & 3] = p + n;
         }
-        
-        xpos = POSMOD(AV_BEG + v->hsync, CRT_HRES);
-        ypos = POSMOD(line + v->vsync, CRT_VRES);
+        int xnudge = -3, ynudge = 3;
+        xpos = POSMOD(AV_BEG + v->hsync + xnudge, CRT_HRES);
+        ypos = POSMOD(line + v->vsync + ynudge, CRT_VRES);
         pos = xpos + ypos * CRT_HRES;
         phasealign = pos & 3;
         

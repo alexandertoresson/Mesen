@@ -197,8 +197,6 @@ namespace Mesen.GUI.Forms.Config
 					}
 					break;
 				case VideoFilterType.LMP88959Ntsc:
-				case VideoFilterType.LMP88959NtscHalfRes:
-				case VideoFilterType.LMP88959NtscQuarterRes:
 					{
 						tlpNtscFilter1.Visible = false;
 						tlpNtscFilter2.Visible = false;

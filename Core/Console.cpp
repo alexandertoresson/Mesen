@@ -573,6 +573,11 @@ uint8_t Console::GetStartingPhase()
 	return _ppu ? _ppu->GetStartingPhase() : 0;
 }
 
+bool Console::GetDotSkipped()
+{
+	return _ppu ? _ppu->GetDotSkipped() : 0;
+}
+
 NesModel Console::GetModel()
 {
 	return _model;

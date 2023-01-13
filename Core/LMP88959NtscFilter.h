@@ -13,15 +13,14 @@ private:
 	bool _keepVerticalRes = false;
 	uint32_t* _frameBuffer;
 	bool _ntscBorder = true;
-	int _resDivider = 1;
 
-	void RecursiveBlend(int iterationCount, uint64_t* output, uint64_t* currentLine, uint64_t* nextLine, int pixelsPerCycle, bool verticalBlend);
+	void GenerateArgbFrame(uint32_t* frameBuffer);
 
 protected:
 	void OnBeforeApplyFilter();
 
 public:
-	LMP88959NtscFilter(shared_ptr<Console> console, int resDivider);
+	LMP88959NtscFilter(shared_ptr<Console> console);
 	virtual ~LMP88959NtscFilter();
 
 	virtual void ApplyFilter(uint16_t *ppuOutputBuffer);

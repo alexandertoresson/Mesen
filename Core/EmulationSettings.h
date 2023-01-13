@@ -168,9 +168,7 @@ enum class VideoFilterType
 	Prescale8x = 23,
 	Prescale10x = 24,
 	Raw = 25,
-	LMP88959NtscQuarterRes = 26,
-	LMP88959NtscHalfRes = 27,
-	LMP88959Ntsc = 28,
+	LMP88959Ntsc = 26,
 	HdPack = 999
 };
 

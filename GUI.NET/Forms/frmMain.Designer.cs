@@ -106,9 +106,7 @@ namespace Mesen.GUI.Forms
             this.mnuNtscBisqwitQuarterFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuNtscBisqwitHalfFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuNtscBisqwitFullFilter = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuNtscLMP88959QuarterFilter = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuNtscLMP88959HalfFilter = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuNtscLMP88959FullFilter = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuNtscLMP88959Filter = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem15 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuXBRZ2xFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuXBRZ3xFilter = new System.Windows.Forms.ToolStripMenuItem();
@@ -834,9 +832,7 @@ namespace Mesen.GUI.Forms
             this.mnuNtscBisqwitQuarterFilter,
             this.mnuNtscBisqwitHalfFilter,
             this.mnuNtscBisqwitFullFilter,
-            this.mnuNtscLMP88959QuarterFilter,
-            this.mnuNtscLMP88959HalfFilter,
-            this.mnuNtscLMP88959FullFilter,
+            this.mnuNtscLMP88959Filter,
             this.toolStripMenuItem15,
             this.mnuXBRZ2xFilter,
             this.mnuXBRZ3xFilter,
@@ -909,26 +905,12 @@ namespace Mesen.GUI.Forms
             this.mnuNtscBisqwitFullFilter.Text = "NTSC 8x (Bisqwit)";
             this.mnuNtscBisqwitFullFilter.Click += new System.EventHandler(this.mnuNtscBisqwitFullFilter_Click);
             // 
-            // mnuNtscLMP88959QuarterFilter
+            // mnuNtscLMP88959Filter
             // 
-            this.mnuNtscLMP88959QuarterFilter.Name = "mnuNtscLMP88959QuarterFilter";
-            this.mnuNtscLMP88959QuarterFilter.Size = new System.Drawing.Size(206, 22);
-            this.mnuNtscLMP88959QuarterFilter.Text = "NTSC 2x (LMP88959)";
-            this.mnuNtscLMP88959QuarterFilter.Click += new System.EventHandler(this.mnuNtscLMP88959QuarterFilter_Click);
-            // 
-            // mnuNtscLMP88959HalfFilter
-            // 
-            this.mnuNtscLMP88959HalfFilter.Name = "mnuNtscLMP88959HalfFilter";
-            this.mnuNtscLMP88959HalfFilter.Size = new System.Drawing.Size(206, 22);
-            this.mnuNtscLMP88959HalfFilter.Text = "NTSC 4x (LMP88959)";
-            this.mnuNtscLMP88959HalfFilter.Click += new System.EventHandler(this.mnuNtscLMP88959HalfFilter_Click);
-            // 
-            // mnuNtscLMP88959FullFilter
-            // 
-            this.mnuNtscLMP88959FullFilter.Name = "mnuNtscLMP88959FullFilter";
-            this.mnuNtscLMP88959FullFilter.Size = new System.Drawing.Size(206, 22);
-            this.mnuNtscLMP88959FullFilter.Text = "NTSC 8x (LMP88959)";
-            this.mnuNtscLMP88959FullFilter.Click += new System.EventHandler(this.mnuNtscLMP88959FullFilter_Click);
+            this.mnuNtscLMP88959Filter.Name = "mnuNtscLMP88959Filter";
+            this.mnuNtscLMP88959Filter.Size = new System.Drawing.Size(206, 22);
+            this.mnuNtscLMP88959Filter.Text = "NTSC (LMP88959)";
+            this.mnuNtscLMP88959Filter.Click += new System.EventHandler(this.mnuNtscLMP88959Filter_Click);
             // 
             // toolStripMenuItem15
             // 
@@ -1123,28 +1105,28 @@ namespace Mesen.GUI.Forms
             // mnuRegionAuto
             // 
             this.mnuRegionAuto.Name = "mnuRegionAuto";
-            this.mnuRegionAuto.Size = new System.Drawing.Size(108, 22);
+            this.mnuRegionAuto.Size = new System.Drawing.Size(180, 22);
             this.mnuRegionAuto.Text = "Auto";
             this.mnuRegionAuto.Click += new System.EventHandler(this.mnuRegion_Click);
             // 
             // mnuRegionNtsc
             // 
             this.mnuRegionNtsc.Name = "mnuRegionNtsc";
-            this.mnuRegionNtsc.Size = new System.Drawing.Size(108, 22);
+            this.mnuRegionNtsc.Size = new System.Drawing.Size(180, 22);
             this.mnuRegionNtsc.Text = "NTSC";
             this.mnuRegionNtsc.Click += new System.EventHandler(this.mnuRegion_Click);
             // 
             // mnuRegionPal
             // 
             this.mnuRegionPal.Name = "mnuRegionPal";
-            this.mnuRegionPal.Size = new System.Drawing.Size(108, 22);
+            this.mnuRegionPal.Size = new System.Drawing.Size(180, 22);
             this.mnuRegionPal.Text = "PAL";
             this.mnuRegionPal.Click += new System.EventHandler(this.mnuRegion_Click);
             // 
             // mnuRegionDendy
             // 
             this.mnuRegionDendy.Name = "mnuRegionDendy";
-            this.mnuRegionDendy.Size = new System.Drawing.Size(108, 22);
+            this.mnuRegionDendy.Size = new System.Drawing.Size(180, 22);
             this.mnuRegionDendy.Text = "Dendy";
             this.mnuRegionDendy.Click += new System.EventHandler(this.mnuRegion_Click);
             // 
@@ -2005,9 +1987,7 @@ namespace Mesen.GUI.Forms
 		private System.Windows.Forms.ToolStripMenuItem mnuNtscBisqwitHalfFilter;
 		private System.Windows.Forms.ToolStripMenuItem mnuNtscBisqwitFullFilter;
 		private System.Windows.Forms.ToolStripMenuItem mnuNtscBisqwitQuarterFilter;
-		private System.Windows.Forms.ToolStripMenuItem mnuNtscLMP88959HalfFilter;
-		private System.Windows.Forms.ToolStripMenuItem mnuNtscLMP88959FullFilter;
-		private System.Windows.Forms.ToolStripMenuItem mnuNtscLMP88959QuarterFilter;
+		private System.Windows.Forms.ToolStripMenuItem mnuNtscLMP88959Filter;
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem22;
 		private System.Windows.Forms.ToolStripMenuItem mnuVideoRecorder;
 		private System.Windows.Forms.ToolStripMenuItem mnuAviRecord;

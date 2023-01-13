@@ -406,15 +406,7 @@ extern "C" {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::BisqwitNtsc);
 				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true, 0);
 			}
-			else if (value == "LMP88959 2x") {
-				_console->GetSettings()->SetVideoFilterType(VideoFilterType::LMP88959NtscQuarterRes);
-				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true, 0);
-			}
-			else if (value == "LMP88959 4x") {
-				_console->GetSettings()->SetVideoFilterType(VideoFilterType::LMP88959NtscHalfRes);
-				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true, 0);
-			}
-			else if (value == "LMP88959 8x") {
+			else if (value == "LMP88959") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::LMP88959Ntsc);
 				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true, 0);
 			}
@@ -1212,9 +1204,7 @@ extern "C" {
 			case VideoFilterType::BisqwitNtscQuarterRes: hscale = 2; break;
 			case VideoFilterType::BisqwitNtscHalfRes: hscale = 4; break;
 			case VideoFilterType::BisqwitNtsc: hscale = 8; break;
-			case VideoFilterType::LMP88959NtscQuarterRes: hscale = 2; break;
-			case VideoFilterType::LMP88959NtscHalfRes: hscale = 4; break;
-			case VideoFilterType::LMP88959Ntsc: hscale = 8; break;
+			case VideoFilterType::LMP88959Ntsc: hscale = 2; break;
 			default: hscale = 1; break;
 		}
 		

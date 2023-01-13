@@ -125,7 +125,7 @@ void NtscFilter::OnBeforeApplyFilter()
 
 void NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 {
-	uint8_t phase = _console->GetModel() == NesModel::NTSC ? _console->GetStartingPhase() : 0;
+	uint8_t phase = _console->GetStartingPhase();
 	for (int i = 0; i < 240; i++) {
 		nes_ntsc_blit(&_ntscData,
 			// input += in_row_width;

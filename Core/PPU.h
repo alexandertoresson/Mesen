@@ -109,8 +109,7 @@ class PPU : public IMemoryHandler, public Snapshotable
 		bool _enableOamDecay;
 		bool _corruptOamRow[32];
 
-		// https://forums.nesdev.org/viewtopic.php?p=30625#p30625
-		uint8_t _startingPhase;
+		bool _isDotSkipped;
 
 		void UpdateStatusFlag();
 
@@ -222,7 +221,13 @@ class PPU : public IMemoryHandler, public Snapshotable
 
 		uint8_t GetStartingPhase()
 		{
-			return _startingPhase;
+			// https://forums.nesdev.org/viewtopic.php?p=30625#p30625
+			return _nesModel == NesModel::NTSC ? _cycle % 3 : 0;
+		}
+
+		bool GetDotSkipped()
+		{
+			return _isDotSkipped;
 		}
 
 		uint32_t GetFrameCycle()
