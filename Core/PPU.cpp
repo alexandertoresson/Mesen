@@ -1016,9 +1016,6 @@ void PPU::ProcessScanline()
 				_cycle = 340;
 				_isDotSkipped = true;
 			}
-			else {
-				_isDotSkipped = false;
-			}
 		}
 	}
 }

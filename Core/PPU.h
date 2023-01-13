@@ -227,7 +227,12 @@ class PPU : public IMemoryHandler, public Snapshotable
 
 		bool GetDotSkipped()
 		{
-			return _isDotSkipped;
+			if (_isDotSkipped) {
+				_isDotSkipped = false;
+				return true;
+			}
+			else
+				return _isDotSkipped;
 		}
 
 		uint32_t GetFrameCycle()

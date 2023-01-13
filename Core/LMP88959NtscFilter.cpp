@@ -55,9 +55,11 @@ void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 	_nesNTSC.data = reinterpret_cast<unsigned short*>(ppuOutputBuffer);
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
 	_nesNTSC.dot_skipped = _console->GetDotSkipped();
-	crt_nes2ntsc(&_crt, &_nesNTSC);
-	crt_draw(&_crt);
-	GenerateArgbFrame(_frameBuffer);
+	if (_nesNTSC.data){
+		crt_nes2ntsc(&_crt, &_nesNTSC);
+		crt_draw(&_crt);
+		GenerateArgbFrame(_frameBuffer);
+	}
 }
 
 void LMP88959NtscFilter::GenerateArgbFrame(uint32_t* frameBuffer)
