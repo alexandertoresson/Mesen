@@ -84,6 +84,7 @@ struct CRT {
     int noise; /* noise level */
     int outw, outh; /* output width/height */
     int *out; /* output image */
+	 int ccf[4]; /* color carrier reference for faster convergence */
 };
 
 /* Initializes the library. Sets up filters.
@@ -105,6 +106,7 @@ extern void crt_reset(struct CRT *v);
 
 struct NES_NTSC_SETTINGS {
     const unsigned short *data; /* 6 or 9-bit NES 'pixels' */
+	 unsigned int borderdata; /* border color, either BG or black */
     int w, h;       /* width and height of image */
     int raw;        /* 0 = scale image to fit monitor, 1 = don't scale */
     int dot_crawl_offset; /* 0, 1, or 2 */

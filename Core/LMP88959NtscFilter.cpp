@@ -35,13 +35,14 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_keepVerticalRes = ntscSettings.KeepVerticalResolution;
 
 	_crt.hue = static_cast<int>(pictureSettings.Hue * 180.0);
-	_crt.saturation = static_cast<int>(((pictureSettings.Saturation + 1.0) / 2.0) * 800);
+	_crt.saturation = static_cast<int>(((pictureSettings.Saturation + 1.0) / 2.0) * 25.0);
 	_crt.brightness = static_cast<int>(pictureSettings.Brightness * 100.0);
 	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
 	_crt.noise = static_cast<int>(ntscSettings.Noise * 500.0);
 
 	_nesNTSC.w = static_cast<int>(PPU::ScreenWidth);
 	_nesNTSC.h = static_cast<int>(PPU::ScreenHeight);
+//	_nesNTSC.raw = 1;
 	_nesNTSC.cc[0] = 0;
 	_nesNTSC.cc[1] = 16;
 	_nesNTSC.cc[2] = 0;
@@ -55,6 +56,7 @@ void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 	_nesNTSC.data = reinterpret_cast<unsigned short*>(ppuOutputBuffer);
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
 	_nesNTSC.dot_skipped = _console->GetDotSkipped();
+	_nesNTSC.borderdata = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
 	if (_nesNTSC.data){
 		crt_nes2ntsc(&_crt, &_nesNTSC);
 		crt_draw(&_crt);

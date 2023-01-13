@@ -33,6 +33,13 @@
  * |--------------||---------------||------------||-------------||-------------|
  *      BLANK            SYNC           BLANK          BLANK          BLANK
  *
+ *
+ *   WITHIN ACTIVE VIDEO PERIOD:
+ *
+ *   LB (15 PPU px)                 AV (256 PPU px)               RB (11 PPU px)
+ * |--------------||--------------------------------------------||-------------|
+ *      BORDER                           VIDEO                        BORDER
+ *
  */
 #define LINE_BEG         0
 #define FP_PPUpx         9         /* front porch */
@@ -479,11 +486,15 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
         lo = 3;
     }
 #endif
+
+    phase = 0;
+
     for (n = 0; n < CRT_VRES; n++) {
         int t; /* time */
         signed char *line = &v->analog[n * CRT_HRES];
         
         t = LINE_BEG;
+        phase += (xo * 3);
 
         // vertical sync scanlines
         if (n >= 259 && n <= CRT_VRES) {
@@ -501,11 +512,22 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
                 for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0)); t++) {
                     cb = s->cc[(t + po) & 3];
                     line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
+                    v->ccf[t & 3] = line[t];
                 }
-                while (t < AV_BEG) line[t++] = BLANK_LEVEL;
-                line[t++] = BLANK_LEVEL;
+        //      if (n >= CRT_TOP && n <= CRT_BOT + 2) {
+        //          int ire, p;
+        //          while (t < CRT_HRES) {
+        //              p = s->borderdata;
+        //              ire = BLACK_LEVEL;
+        //              ire += square_sample(p, phase + po);
+        //              ire = (ire * WHITE_LEVEL) >> 12;
+        //              line[t++] = ire;
+        //              phase += 4;
+        //          }
+        //      } else {
+                    while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
+        //      }
             }
-            while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
         }
     }
 
@@ -521,12 +543,12 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             int ire, p;
             
             p = s->data[((x * s->w) / destw) + sy];
-            ire = BLACK_LEVEL + v->black_point;
+            ire = BLACK_LEVEL;
             ire += square_sample(p, phase + 0);
             ire += square_sample(p, phase + 1);
             ire += square_sample(p, phase + 2);
             ire += square_sample(p, phase + 3);
-            ire = (ire * (WHITE_LEVEL * v->white_point / 100)) >> 12;
+            ire = (ire * WHITE_LEVEL) >> 12;
             v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
             phase += 3;
         }
@@ -536,8 +558,8 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
 }
 
 /* search windows, in samples */
-#define HSYNC_WINDOW 8
-#define VSYNC_WINDOW 8
+#define HSYNC_WINDOW 4
+#define VSYNC_WINDOW 6
 
 extern void
 crt_draw(struct CRT *v)
@@ -554,15 +576,18 @@ crt_draw(struct CRT *v)
     signed char *sig;
     int s = 0;
     int field, ratio;
-    int ccref[4]; /* color carrier signal */
+    static int ccref[4]; /* color carrier signal */
     int huesn, huecs;
     
     crt_sincos14(&huesn, &huecs, ((v->hue % 360) + 90) * 8192 / 180);
     huesn >>= 11; /* make 4-bit */
     huecs >>= 11;
 
-    memset(ccref, 0, sizeof(ccref));
-    
+    ccref[0] = v->ccf[0] << 7;
+    ccref[1] = v->ccf[1] << 7;
+    ccref[2] = v->ccf[2] << 7;
+    ccref[3] = v->ccf[3] << 7;
+
     for (i = 0; i < CRT_INPUT_SIZE; i++) {
         static int rn = 194; /* 'random' noise */
 
@@ -662,7 +687,7 @@ vsync_found:
        
         sig = v->inp + ln + (v->hsync & ~3); /* burst @ 1/CB_FREQ sample rate */
         for (i = CB_BEG; i < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); i++) {
-            int p = ccref[i & 3] * 3 / 4; /* fraction of the previous */
+            int p = ccref[i & 3] * 127 / 128; /* fraction of the previous */
             int n = sig[i];                   /* mixed with the new sample */
             ccref[i & 3] = p + n;
         }
