@@ -662,7 +662,7 @@ vsync_found:
        
         sig = v->inp + ln + (v->hsync & ~3); /* burst @ 1/CB_FREQ sample rate */
         for (i = CB_BEG; i < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); i++) {
-            int p = ccref[i & 3] * 127 / 128; /* fraction of the previous */
+            int p = ccref[i & 3] * 3 / 4; /* fraction of the previous */
             int n = sig[i];                   /* mixed with the new sample */
             ccref[i & 3] = p + n;
         }

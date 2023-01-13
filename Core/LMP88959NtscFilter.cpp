@@ -35,7 +35,7 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_keepVerticalRes = ntscSettings.KeepVerticalResolution;
 
 	_crt.hue = static_cast<int>(pictureSettings.Hue * 180.0);
-	_crt.saturation = static_cast<int>(((pictureSettings.Saturation + 1.0) / 2.0) * 25.0);
+	_crt.saturation = static_cast<int>(((pictureSettings.Saturation + 1.0) / 2.0) * 800);
 	_crt.brightness = static_cast<int>(pictureSettings.Brightness * 100.0);
 	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
 	_crt.noise = static_cast<int>(ntscSettings.Noise * 500.0);
