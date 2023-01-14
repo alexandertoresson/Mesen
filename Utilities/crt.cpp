@@ -78,7 +78,7 @@
 
 /* IRE units (100 = 1.0V, -40 = 0.0V) */
 /* https://www.nesdev.org/wiki/NTSC_video#Terminated_measurement */
-#define WHITE_LEVEL      100
+#define WHITE_LEVEL      110
 #define BURST_LEVEL      30
 #define BLACK_LEVEL      0
 #define BLANK_LEVEL      0
@@ -333,6 +333,62 @@ iirf(struct IIRLP *f, int s)
 #endif
 }
 
+//Precalculate the low and high signal chosen for each 64 base colors
+//with their respective attenuated values
+// https://www.nesdev.org/wiki/NTSC_video#Brightness_Levels
+const int8_t IRE_levels[2][2][0x40] {
+   // waveform low
+   {
+      // normal
+      {
+            // 0x
+            43, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, 0, 0,
+            // 1x
+            74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            // 2x
+            110, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 0, 0,
+            // 3x
+            110, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 0, 0
+         },
+      // attenuated
+      {
+         // 0x
+         26 , -17, -17, -17, -17, -17, -17, -17, -17, -17, -17, -17, -17, -17, 0, 0,
+         // 1x
+         51, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, 0, 0,
+         // 2x
+         82, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 0, 0,
+         // 3x
+         82, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 0, 0
+      }
+   },
+   // waveform high
+   {
+      // normal
+      {
+         // 0x
+         43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, -12, 0, 0,
+         // 1x
+         74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 0, 0, 0,
+         // 2x
+         110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 34, 0, 0,
+         // 3x
+         110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 80, 0, 0
+         },
+      // attenuated
+      {
+         // 0x
+         26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, -17, 0, 0,
+         // 1x
+         51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, -8, 0, 0,
+         // 2x
+         82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 19, 0, 0,
+         // 3x
+         82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 56, 0, 0
+      }
+   }
+};
+
 /*****************************************************************************/
 /***************************** PUBLIC FUNCTIONS ******************************/
 /*****************************************************************************/
@@ -390,38 +446,30 @@ square_sample(int pixel_color, int phase)
         0x140, 0x100,
         0x180, 0x080
     };
-    int bri, hue, voltage;
+    int pixel_index, hue, level, emphasis = 0;
+	 pixel_index = pixel_color & 0x3F;
+    hue = (pixel_index & 0x0f);
 
-    hue = (pixel_color & 0x0f);
-    
-    /* last two columns are black */
-    if (hue >= 0x0e) {
-        return 0;
-    }
+	 if (hue >= 0x0e) return 0;
 
-    bri = ((pixel_color & 0x30) >> 4) * 300;
-    
     switch (hue) {
-        case 0:
-            voltage = bri + 410;
-            break;
-        case 0x0d:
-            voltage = bri - 300;
-            break;
-        default:
-            voltage = (((hue + phase) % 12) < 6) ? (bri + 410) : (bri - 300);
-            break;
+    case 0:
+       level = 1;
+       break;
+    case 0x0d:
+       level = 0;
+       break;
+    default:
+       level = (((hue + phase) % 12) < 6);
+       break;
     }
 
-    if (voltage > 1024) {
-        voltage = 1024;
-    }
     /* red 0100, green 0200, blue 0400 */
-    if ((pixel_color & 0x1C0) & active[(phase >> 1) % 6]) {
-        return (voltage >> 1) + (voltage >> 2);
+    if (((pixel_color & 0x1C0) & active[(phase >> 1) % 6]) && hue < 0x0e) {
+		 emphasis = 1;
     }
 
-    return voltage;
+	 return IRE_levels[level][emphasis][(pixel_index)];
 }
 
 extern void
@@ -529,7 +577,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
                         ire += square_sample(p, phase + 1);
                         ire += square_sample(p, phase + 2);
                         ire += square_sample(p, phase + 3);
-                        ire = (ire * WHITE_LEVEL) >> 12;
+                        ire >>= 2;
                         line[t++] = ire;
                         phase += 3;
                     }
@@ -548,6 +596,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
     for (y = (lo - 3); y < desth; y++) {
         int sy = (y * s->h) / desth;
         if (sy >= s->h) sy = s->h;
+        if (sy < 0) sy = 0;
         
         sy *= s->w;
         phase += (xo * 3);
@@ -560,7 +609,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             ire += square_sample(p, phase + 1);
             ire += square_sample(p, phase + 2);
             ire += square_sample(p, phase + 3);
-            ire = (ire * WHITE_LEVEL) >> 12;
+				ire >>= 2;
             v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
             phase += 3;
         }
@@ -646,7 +695,7 @@ vsync_found:
 #if CRT_DO_VSYNC
     v->vsync = line; /* vsync found (or gave up) at this line */
 #else
-    v->vsync = 4;
+    v->vsync = -3;
 #endif
     /* if vsync signal was in second half of line, odd field */
     field = (j > (CRT_HRES / 2));
@@ -695,7 +744,7 @@ vsync_found:
 #if CRT_DO_HSYNC
         v->hsync = POSMOD(i + v->hsync, CRT_HRES);
 #else
-        v->hsync = 1;
+        v->hsync = 3;
 #endif
        
         sig = v->inp + ln + (v->hsync & ~3); /* burst @ 1/CB_FREQ sample rate */

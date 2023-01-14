@@ -13,27 +13,6 @@ BisqwitNtscFilter::BisqwitNtscFilter(shared_ptr<Console> console, int resDivider
 	_resDivider = resDivider;
 	_stopThread = false;
 	_workDone = false;
-
-	const int8_t signalLumaLow[2][4] = { { -29, -15, 22, 71 }, { -38, -28, -1, 34 } };
-	const int8_t signalLumaHigh[2][4] = { { 32, 66, 105, 105 }, { 6, 31, 58, 58 } };
-
-	//Precalculate the low and high signal chosen for each 64 base colors
-	//with their respective attenuated values
-	for (int h = 0; h <= 1; h++) {
-		for(int i = 0; i <= 0x3F; i++) {
-			int r = (i & 0x0F) >= 0x0E ? 0x1D : i;
-
-			int m = signalLumaLow[h][r / 0x10];
-			int q = signalLumaHigh[h][r / 0x10];
-			if((r & 0x0F) == 13) {
-				q = m;
-			} else if((r & 0x0F) == 0) { 
-				m = q;
-			}
-			_signalLow[h][i] = m;
-			_signalHigh[h][i] = q;
-		}
-	}
 	_extraThread = std::thread([=]() {
 		//Worker thread to improve decode speed
 		while(!_stopThread) {

@@ -57,10 +57,10 @@ void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
 	_nesNTSC.dot_skipped = _console->GetDotSkipped();
 	_nesNTSC.borderdata = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
-	if (_ppuOutputBuffer != nullptr){
-		crt_nes2ntsc(&_crt, &_nesNTSC);
-		crt_draw(&_crt);
-	}
+
+	crt_nes2ntsc(&_crt, &_nesNTSC);
+	crt_draw(&_crt);
+	
 	GenerateArgbFrame(_frameBuffer);
 }
 
