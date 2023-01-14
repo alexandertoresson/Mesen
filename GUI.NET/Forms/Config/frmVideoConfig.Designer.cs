@@ -71,7 +71,7 @@ namespace Mesen.GUI.Forms.Config
             this.trkQFilterLength = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
             this.tableLayoutPanel19 = new System.Windows.Forms.TableLayoutPanel();
             this.chkColorimetryCorrection = new System.Windows.Forms.CheckBox();
-            this.chkVerticalBlend = new System.Windows.Forms.CheckBox();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.tlpNtscFilter1 = new System.Windows.Forms.TableLayoutPanel();
             this.trkArtifacts = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
             this.trkBleed = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
@@ -81,6 +81,7 @@ namespace Mesen.GUI.Forms.Config
             this.trkSharpness = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.chkMergeFields = new System.Windows.Forms.CheckBox();
+            this.chkVerticalBlend = new System.Windows.Forms.CheckBox();
             this.chkUseExternalPalette = new System.Windows.Forms.CheckBox();
             this.chkKeepVerticalResolution = new System.Windows.Forms.CheckBox();
             this.grpCommon = new System.Windows.Forms.GroupBox();
@@ -166,7 +167,6 @@ namespace Mesen.GUI.Forms.Config
             this.mnuPaletteSonyCxa2025As = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPaletteUnsaturated = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPaletteYuv = new System.Windows.Forms.ToolStripMenuItem();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.tlpMain.SuspendLayout();
             this.flpResolution.SuspendLayout();
             this.flowLayoutPanel7.SuspendLayout();
@@ -822,15 +822,15 @@ namespace Mesen.GUI.Forms.Config
             this.chkColorimetryCorrection.Text = "Color Correction";
             this.chkColorimetryCorrection.UseVisualStyleBackColor = true;
             // 
-            // chkVerticalBlend
+            // checkBox1
             // 
-            this.chkVerticalBlend.AutoSize = true;
-            this.chkVerticalBlend.Location = new System.Drawing.Point(3, 28);
-            this.chkVerticalBlend.Name = "chkVerticalBlend";
-            this.chkVerticalBlend.Size = new System.Drawing.Size(134, 17);
-            this.chkVerticalBlend.TabIndex = 31;
-            this.chkVerticalBlend.Text = "Apply Vertical Blending";
-            this.chkVerticalBlend.UseVisualStyleBackColor = true;
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(3, 28);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(134, 17);
+            this.checkBox1.TabIndex = 33;
+            this.checkBox1.Text = "Apply Vertical Blending";
+            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // tlpNtscFilter1
             // 
@@ -976,6 +976,16 @@ namespace Mesen.GUI.Forms.Config
             this.chkMergeFields.TabIndex = 30;
             this.chkMergeFields.Text = "Merge Fields";
             this.chkMergeFields.UseVisualStyleBackColor = true;
+            // 
+            // chkVerticalBlend
+            // 
+            this.chkVerticalBlend.AutoSize = true;
+            this.chkVerticalBlend.Location = new System.Drawing.Point(3, 28);
+            this.chkVerticalBlend.Name = "chkVerticalBlend";
+            this.chkVerticalBlend.Size = new System.Drawing.Size(134, 17);
+            this.chkVerticalBlend.TabIndex = 31;
+            this.chkVerticalBlend.Text = "Apply Vertical Blending";
+            this.chkVerticalBlend.UseVisualStyleBackColor = true;
             // 
             // chkUseExternalPalette
             // 
@@ -2195,16 +2205,6 @@ namespace Mesen.GUI.Forms.Config
             this.mnuPaletteYuv.Size = new System.Drawing.Size(254, 22);
             this.mnuPaletteYuv.Text = "YUV v3 (by FirebrandX)";
             this.mnuPaletteYuv.Click += new System.EventHandler(this.mnuPaletteYuv_Click);
-            // 
-            // checkBox1
-            // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(3, 28);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(134, 17);
-            this.checkBox1.TabIndex = 33;
-            this.checkBox1.Text = "Apply Vertical Blending";
-            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // frmVideoConfig
             // 

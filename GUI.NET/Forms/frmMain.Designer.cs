@@ -909,7 +909,7 @@ namespace Mesen.GUI.Forms
             // 
             this.mnuNtscLMP88959Filter.Name = "mnuNtscLMP88959Filter";
             this.mnuNtscLMP88959Filter.Size = new System.Drawing.Size(206, 22);
-            this.mnuNtscLMP88959Filter.Text = "NTSC (LMP88959)";
+            this.mnuNtscLMP88959Filter.Text = "NTSC 2x (LMP88959)";
             this.mnuNtscLMP88959Filter.Click += new System.EventHandler(this.mnuNtscLMP88959Filter_Click);
             // 
             // toolStripMenuItem15
