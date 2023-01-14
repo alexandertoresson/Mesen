@@ -447,10 +447,10 @@ square_sample(int pixel_color, int phase)
         0x180, 0x080
     };
     int pixel_index, hue, level, emphasis = 0;
-	 pixel_index = pixel_color & 0x3F;
+    pixel_index = pixel_color & 0x3F;
     hue = (pixel_index & 0x0f);
 
-	 if (hue >= 0x0e) return 0;
+    if (hue >= 0x0e) return 0;
 
     switch (hue) {
     case 0:
@@ -466,10 +466,10 @@ square_sample(int pixel_color, int phase)
 
     /* red 0100, green 0200, blue 0400 */
     if (((pixel_color & 0x1C0) & active[(phase >> 1) % 6]) && hue < 0x0e) {
-		 emphasis = 1;
+       emphasis = 1;
     }
 
-	 return IRE_levels[level][emphasis][(pixel_index)];
+    return IRE_levels[level][emphasis][(pixel_index)];
 }
 
 extern void
@@ -553,41 +553,37 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             /* prerender/postrender/video scanlines */
             while (t < SYNC_BEG) line[t++] = BLANK_LEVEL; /* FP */
             while (t < BW_BEG) line[t++] = SYNC_LEVEL;  /* SYNC */
-            while (t < AV_BEG) { /* BW + CB + BP */
-                while (t < CB_BEG) line[t++] = BLANK_LEVEL;
-                int cb;
-                /* CB_CYCLES of color burst at 3.579545 Mhz */
-                int skipdot = PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0));
-                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - skipdot; t++) {
-                    cb = s->cc[(t + po) & 3];
-                    line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
-                    v->ccf[t & 3] = line[t];
-                }
-                t = AV_BEG;
+            while (t < CB_BEG) line[t++] = BLANK_LEVEL; /* BW + CB + BP */
+            int cb;
+            /* CB_CYCLES of color burst at 3.579545 Mhz */
+            int skipdot = PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0));
+            for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - skipdot; t++) {
+                cb = s->cc[(t + po) & 3];
+                line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
+                v->ccf[t & 3] = line[t];
             }
-            while (t < CRT_HRES) {
-                phase += t * 3;
-                if (n >= CRT_TOP && n <= (CRT_BOT + 2)) {
-                    while (t < CRT_HRES) {
-                        int ire, p;
-                        p = s->borderdata;
-                        if (t == AV_BEG) p = 0xF0;
-                        ire = BLACK_LEVEL;
-                        ire += square_sample(p, phase + 0);
-                        ire += square_sample(p, phase + 1);
-                        ire += square_sample(p, phase + 2);
-                        ire += square_sample(p, phase + 3);
-                        ire >>= 2;
-                        line[t++] = ire;
-                        phase += 3;
-                    }
+            while (t < AV_BEG) line[t++] = BLANK_LEVEL;
+            phase += t * 3;
+            if (n >= CRT_TOP && n <= (CRT_BOT + 2)) {
+                while (t < CRT_HRES) {
+                    int ire, p;
+                    p = s->borderdata;
+                    if (t == AV_BEG) p = 0xF0;
+                    ire = BLACK_LEVEL;
+                    ire += square_sample(p, phase + 0);
+                    ire += square_sample(p, phase + 1);
+                    ire += square_sample(p, phase + 2);
+                    ire += square_sample(p, phase + 3);
+                    ire >>= 2;
+                    line[t++] = ire;
+                    phase += 3;
                 }
-                else {
-                    while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
-                    phase += (CRT_HRES - AV_BEG) * 3;
-                }
-                phase %= 12;
             }
+            else {
+                while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
+                phase += (CRT_HRES - AV_BEG) * 3;
+            }
+            phase %= 12;
         }
     }
 
@@ -609,7 +605,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             ire += square_sample(p, phase + 1);
             ire += square_sample(p, phase + 2);
             ire += square_sample(p, phase + 3);
-				ire >>= 2;
+            ire >>= 2;
             v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
             phase += 3;
         }
