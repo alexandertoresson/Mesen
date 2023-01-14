@@ -64,6 +64,7 @@
 #define CB_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx)            /* color burst point */
 #define BP_BEG           PPUpx2pos(FP_PPUpx + SYNC_PPUpx + BW_PPUpx + CB_PPUpx) /* back porch point */
 #define AV_BEG           PPUpx2pos(HB_PPUpx)                                    /* active video point */
+#define PPUAV_BEG        PPUpx2pos(HB_PPUpx + PS_PPUpx + LB_PPUpx)              /* PPU active video point */
 #define AV_LEN           PPUpx2pos(AV_PPUpx)                                    /* active video length */
 
 /* somewhere between 7 and 12 cycles */
@@ -351,8 +352,8 @@ crt_reset(struct CRT *v)
     v->saturation = 18;
     v->brightness = 0;
     v->contrast = 180;
-    v->black_point = 0;
-    v->white_point = 100;
+    //v->black_point = 0;
+    //v->white_point = 100;
     v->noise = 0;
     v->hsync = 0;
     v->vsync = 0;
@@ -459,9 +460,9 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
     }
 #endif
 
-    xo = AV_BEG;
+    xo = PPUAV_BEG;
     yo = CRT_TOP;
-        
+         
     /* align signal */
     xo = (xo & ~3);
 #if CRT_NES_HIRES
@@ -487,14 +488,13 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
     }
 #endif
 
-    phase = 0;
+    phase = (1 + po) * 3;
 
     for (n = 0; n < CRT_VRES; n++) {
         int t; /* time */
         signed char *line = &v->analog[n * CRT_HRES];
         
         t = LINE_BEG;
-        phase += (xo * 3);
 
         // vertical sync scanlines
         if (n >= 259 && n <= CRT_VRES) {
@@ -509,24 +509,36 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
                 while (t < CB_BEG) line[t++] = BLANK_LEVEL;
                 int cb;
                 /* CB_CYCLES of color burst at 3.579545 Mhz */
-                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0)); t++) {
+                int skipdot = PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0));
+                for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - skipdot; t++) {
                     cb = s->cc[(t + po) & 3];
                     line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
                     v->ccf[t & 3] = line[t];
                 }
-        //      if (n >= CRT_TOP && n <= CRT_BOT + 2) {
-        //          int ire, p;
-        //          while (t < CRT_HRES) {
-        //              p = s->borderdata;
-        //              ire = BLACK_LEVEL;
-        //              ire += square_sample(p, phase + po);
-        //              ire = (ire * WHITE_LEVEL) >> 12;
-        //              line[t++] = ire;
-        //              phase += 4;
-        //          }
-        //      } else {
+                t = AV_BEG;
+            }
+            while (t < CRT_HRES) {
+                phase += t * 3;
+                if (n >= CRT_TOP && n <= (CRT_BOT + 2)) {
+                    while (t < CRT_HRES) {
+                        int ire, p;
+                        p = s->borderdata;
+                        if (t == AV_BEG) p = 0xF0;
+                        ire = BLACK_LEVEL;
+                        ire += square_sample(p, phase + 0);
+                        ire += square_sample(p, phase + 1);
+                        ire += square_sample(p, phase + 2);
+                        ire += square_sample(p, phase + 3);
+                        ire = (ire * WHITE_LEVEL) >> 12;
+                        line[t++] = ire;
+                        phase += 3;
+                    }
+                }
+                else {
                     while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
-        //      }
+                    phase += (CRT_HRES - AV_BEG) * 3;
+                }
+                phase %= 12;
             }
         }
     }
@@ -543,7 +555,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             int ire, p;
             
             p = s->data[((x * s->w) / destw) + sy];
-            ire = BLACK_LEVEL;
+            ire = BLANK_LEVEL;
             ire += square_sample(p, phase + 0);
             ire += square_sample(p, phase + 1);
             ire += square_sample(p, phase + 2);
@@ -558,7 +570,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
 }
 
 /* search windows, in samples */
-#define HSYNC_WINDOW 4
+#define HSYNC_WINDOW 6
 #define VSYNC_WINDOW 6
 
 extern void
@@ -572,12 +584,13 @@ crt_draw(struct CRT *v)
     int prev_e; /* filtered beam energy per scan line */
     int max_e; /* approx maximum energy in a scan line */
 #endif
-    int bright = v->brightness - (BLACK_LEVEL + v->black_point);
+    int bright = v->brightness - (BLACK_LEVEL); //+ v->black_point);
     signed char *sig;
     int s = 0;
     int field, ratio;
     static int ccref[4]; /* color carrier signal */
     int huesn, huecs;
+    int xnudge = -3, ynudge = 3;
     
     crt_sincos14(&huesn, &huecs, ((v->hue % 360) + 90) * 8192 / 180);
     huesn >>= 11; /* make 4-bit */
@@ -691,8 +704,7 @@ vsync_found:
             int n = sig[i];                   /* mixed with the new sample */
             ccref[i & 3] = p + n;
         }
-        int xnudge = -3, ynudge = 3;
-        xpos = POSMOD(AV_BEG + v->hsync + xnudge, CRT_HRES);
+        xpos = POSMOD(PPUAV_BEG + v->hsync + xnudge, CRT_HRES);
         ypos = POSMOD(line + v->vsync + ynudge, CRT_VRES);
         pos = xpos + ypos * CRT_HRES;
         phasealign = pos & 3;

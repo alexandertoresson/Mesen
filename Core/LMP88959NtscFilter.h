@@ -12,6 +12,7 @@ private:
 	struct CRT _crt;
 	bool _keepVerticalRes = false;
 	uint32_t* _frameBuffer;
+	uint16_t* _ppuOutputBuffer;
 	bool _ntscBorder = true;
 
 	void GenerateArgbFrame(uint32_t* frameBuffer);

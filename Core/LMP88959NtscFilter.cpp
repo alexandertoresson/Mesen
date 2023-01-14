@@ -42,7 +42,6 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 
 	_nesNTSC.w = static_cast<int>(PPU::ScreenWidth);
 	_nesNTSC.h = static_cast<int>(PPU::ScreenHeight);
-//	_nesNTSC.raw = 1;
 	_nesNTSC.cc[0] = 0;
 	_nesNTSC.cc[1] = 16;
 	_nesNTSC.cc[2] = 0;
@@ -53,15 +52,16 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 
 void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 {
-	_nesNTSC.data = reinterpret_cast<unsigned short*>(ppuOutputBuffer);
+	_ppuOutputBuffer = ppuOutputBuffer;
+	_nesNTSC.data = reinterpret_cast<unsigned short*>(_ppuOutputBuffer);
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
 	_nesNTSC.dot_skipped = _console->GetDotSkipped();
 	_nesNTSC.borderdata = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
-	if (_nesNTSC.data){
+	if (_ppuOutputBuffer != nullptr){
 		crt_nes2ntsc(&_crt, &_nesNTSC);
 		crt_draw(&_crt);
-		GenerateArgbFrame(_frameBuffer);
 	}
+	GenerateArgbFrame(_frameBuffer);
 }
 
 void LMP88959NtscFilter::GenerateArgbFrame(uint32_t* frameBuffer)
