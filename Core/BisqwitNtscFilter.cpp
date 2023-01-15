@@ -13,6 +13,7 @@ BisqwitNtscFilter::BisqwitNtscFilter(shared_ptr<Console> console, int resDivider
 	_resDivider = resDivider;
 	_stopThread = false;
 	_workDone = false;
+	_startingPhase = _console->GetStartingPhase();
 	_extraThread = std::thread([=]() {
 		//Worker thread to improve decode speed
 		while(!_stopThread) {
@@ -29,7 +30,7 @@ BisqwitNtscFilter::BisqwitNtscFilter(shared_ptr<Console> console, int resDivider
 			} else {
 				outputBuffer += GetOverscan().GetScreenWidth() * 64 / _resDivider / _resDivider * (120 - GetOverscan().Top);
 			}
-			DecodeFrame(120, 239 - GetOverscan().Bottom, outputBuffer, (_console->GetStartingPhase() * 4) + 327360);
+			DecodeFrame(120, 239 - GetOverscan().Bottom, outputBuffer, (_startingPhase * 4) + 327360);
 
 			_workDone = true;
 		}
@@ -49,7 +50,7 @@ void BisqwitNtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 
 	_workDone = false;
 	_waitWork.Signal();
-	DecodeFrame(GetOverscan().Top, 120, GetOutputBuffer(), (_console->GetStartingPhase() * 4) + GetOverscan().Top * 341 * 8);
+	DecodeFrame(GetOverscan().Top, 120, GetOutputBuffer(), (_startingPhase * 4) + GetOverscan().Top * 341 * 8);
 	while(!_workDone) {}
 }
 
@@ -81,6 +82,8 @@ void BisqwitNtscFilter::OnBeforeApplyFilter()
 	for(int i = 0; i < 27; i++) {
 		_sinetable[i] = (int8_t)(8 * std::sin(i * 2 * pi / 12 + pictureSettings.Hue * pi));
 	}
+
+	_startingPhase = _console->GetStartingPhase();
 
 	_yWidth = (int)(12 + ntscSettings.YFilterLength * 22);
 	_iWidth = (int)(12 + ntscSettings.IFilterLength * 22);

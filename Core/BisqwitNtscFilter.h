@@ -38,6 +38,9 @@ private:
 
 	//To finetune hue, you would have to recalculate sinetable[]. (Coarse changes can be made with Phase0.)
 	int8_t _sinetable[27]; // 8*sin(x*2pi/12)
+
+	uint8_t _startingPhase = 0;
+
 	//Precalculate the low and high signal chosen for each 64 base colors
 	//with their respective attenuated values
 	const int8_t _signalLow[2][0x40] = {
