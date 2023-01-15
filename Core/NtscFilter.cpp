@@ -10,6 +10,35 @@ NtscFilter::NtscFilter(shared_ptr<Console> console) : BaseVideoFilter(console)
 	memset(&_ntscData, 0, sizeof(_ntscData));
 	_ntscSetup = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	_ntscBuffer = new uint32_t[NES_NTSC_OUT_WIDTH(256) * 240]();
+
+
+	_startingPhase = _console->GetStartingPhase();
+	_extraThread = std::thread([=]() {
+		//Worker thread to improve decode speed
+		while (!_stopThread) {
+			_waitWork.Wait();
+			if (_stopThread) {
+				break;
+			}
+			uint8_t phase = _startingPhase;
+			for (int i = 0; i < 120; i++) {
+				nes_ntsc_blit(&_ntscData,
+					// input += in_row_width;
+					_ppuOutputBuffer + PPU::ScreenWidth * i,
+					_ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F,
+					PPU::ScreenWidth,
+					phase,
+					PPU::ScreenWidth,
+					1,
+					// rgb_out = (char*) rgb_out + out_pitch;
+					reinterpret_cast<char*>(_ntscBuffer) + (NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) * 4 * i),
+					NES_NTSC_OUT_WIDTH(PPU::ScreenWidth) * 4);
+
+				phase = (phase + 1) % 3;
+			}
+			_workDone = true;
+		}
+		});
 }
 
 FrameInfo NtscFilter::GetFrameInfo()
@@ -121,15 +150,20 @@ void NtscFilter::OnBeforeApplyFilter()
 
 		nes_ntsc_init(&_ntscData, &_ntscSetup);
 	}
+	_startingPhase = _console->GetStartingPhase();
 }
 
 void NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 {
-	uint8_t phase = _console->GetStartingPhase();
-	for (int i = 0; i < 240; i++) {
+	_ppuOutputBuffer = ppuOutputBuffer;
+
+	_workDone = false;
+	_waitWork.Signal();
+	uint8_t phase = _startingPhase;
+	for (int i = 120; i < 240; i++) {
 		nes_ntsc_blit(&_ntscData,
 			// input += in_row_width;
-			ppuOutputBuffer + PPU::ScreenWidth * i,
+			_ppuOutputBuffer + PPU::ScreenWidth * i,
 			_ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F,
 			PPU::ScreenWidth,
 			phase,
@@ -141,6 +175,9 @@ void NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 
 		phase = (phase + 1) % 3;
 	}
+
+	while (!_workDone) {}
+	
 	GenerateArgbFrame(_ntscBuffer);
 }
 
@@ -207,5 +244,8 @@ void NtscFilter::GenerateArgbFrame(uint32_t *ntscBuffer)
 
 NtscFilter::~NtscFilter()
 {
+	_stopThread = true;
+	_waitWork.Signal();
+	_extraThread.join();
 	delete[] _ntscBuffer;
 }
