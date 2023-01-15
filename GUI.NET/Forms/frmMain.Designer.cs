@@ -881,7 +881,7 @@ namespace Mesen.GUI.Forms
             // 
             this.mnuNtscFilter.Name = "mnuNtscFilter";
             this.mnuNtscFilter.Size = new System.Drawing.Size(206, 22);
-            this.mnuNtscFilter.Text = "NTSC";
+            this.mnuNtscFilter.Text = "NTSC 2x (blargg)";
             this.mnuNtscFilter.Click += new System.EventHandler(this.mnuNtscFilter_Click);
             // 
             // mnuNtscBisqwitQuarterFilter
