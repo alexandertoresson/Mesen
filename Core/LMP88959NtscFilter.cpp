@@ -11,7 +11,16 @@ LMP88959NtscFilter::LMP88959NtscFilter(shared_ptr<Console> console) : BaseVideoF
 	memset(&_crt, 0, sizeof(CRT));
 	memset(&_nesNTSC, 0, sizeof(NES_NTSC_SETTINGS));
 	_frameBuffer = new uint32_t[(256 * 2) * 240]();
+
 	crt_init(&_crt, (256 * 2), 240, reinterpret_cast<int*>(_frameBuffer));
+
+	_nesNTSC.w = static_cast<int>(PPU::ScreenWidth);
+	_nesNTSC.h = static_cast<int>(PPU::ScreenHeight);
+	_nesNTSC.cc[0] = 0;
+	_nesNTSC.cc[1] = 16;
+	_nesNTSC.cc[2] = 0;
+	_nesNTSC.cc[3] = -16;
+	_nesNTSC.ccs = 16;
 }
 
 FrameInfo LMP88959NtscFilter::GetFrameInfo()
@@ -40,28 +49,22 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
 	_crt.noise = static_cast<int>(ntscSettings.Noise * 500.0);
 
-	_nesNTSC.w = static_cast<int>(PPU::ScreenWidth);
-	_nesNTSC.h = static_cast<int>(PPU::ScreenHeight);
-	_nesNTSC.cc[0] = 0;
-	_nesNTSC.cc[1] = 16;
-	_nesNTSC.cc[2] = 0;
-	_nesNTSC.cc[3] = -16;
-	_nesNTSC.ccs = 16;
-
+	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
+	_nesNTSC.dot_skipped = _console->GetDotSkipped();
+	_nesNTSC.borderdata = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
 }
 
 void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 {
 	_ppuOutputBuffer = ppuOutputBuffer;
+
 	_nesNTSC.data = reinterpret_cast<unsigned short*>(_ppuOutputBuffer);
-	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
-	_nesNTSC.dot_skipped = _console->GetDotSkipped();
-	_nesNTSC.borderdata = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
 
 	crt_nes2ntsc(&_crt, &_nesNTSC);
+
 	crt_draw(&_crt);
-	
 	GenerateArgbFrame(_frameBuffer);
+
 }
 
 void LMP88959NtscFilter::GenerateArgbFrame(uint32_t* frameBuffer)

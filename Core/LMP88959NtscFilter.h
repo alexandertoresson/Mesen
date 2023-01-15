@@ -1,3 +1,5 @@
+// NTSC filter based on EMMIR's composite modem
+// https://github.com/LMP88959/NTSC-CRT
 #pragma once
 #include "stdafx.h"
 #include "BaseVideoFilter.h"
@@ -10,7 +12,9 @@ class LMP88959NtscFilter : public BaseVideoFilter
 private:
 	struct NES_NTSC_SETTINGS _nesNTSC;
 	struct CRT _crt;
+
 	bool _keepVerticalRes = false;
+
 	uint32_t* _frameBuffer;
 	uint16_t* _ppuOutputBuffer;
 	bool _ntscBorder = true;

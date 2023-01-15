@@ -333,23 +333,23 @@ iirf(struct IIRLP *f, int s)
 #endif
 }
 
-//Precalculate the low and high signal chosen for each 64 base colors
-//with their respective attenuated values
+// Precalculate the low and high signal chosen for each 64 base colors
+// with their respective attenuated values
 // https://www.nesdev.org/wiki/NTSC_video#Brightness_Levels
 const int8_t IRE_levels[2][2][0x40] {
    // waveform low
    {
       // normal
       {
-            // 0x
-            43, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, 0, 0,
-            // 1x
-            74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            // 2x
-            110, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 0, 0,
-            // 3x
-            110, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 0, 0
-         },
+         // 0x
+         43, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, -12, 0, 0,
+         // 1x
+         74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+         // 2x
+         110, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 0, 0,
+         // 3x
+         110, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 0, 0
+      },
       // attenuated
       {
          // 0x
@@ -446,34 +446,35 @@ square_sample(int pixel_color, int phase)
         0x140, 0x100,
         0x180, 0x080
     };
-    int pixel_index, hue, level, emphasis = 0;
-    pixel_index = pixel_color & 0x3F;
-    hue = (pixel_index & 0x0f);
+    int pixel_index = pixel_color & 0x3F;
+    int hue = (pixel_index & 0x0f);
+    int level;
+    int emphasis = 0;
 
     if (hue >= 0x0e) return 0;
 
     switch (hue) {
     case 0:
-       level = 1;
-       break;
+        level = 1;
+        break;
     case 0x0d:
-       level = 0;
-       break;
+        level = 0;
+        break;
     default:
-       level = (((hue + phase) % 12) < 6);
-       break;
+        level = (((hue + phase) % 12) < 6);
+        break;
     }
 
     /* red 0100, green 0200, blue 0400 */
-    if (((pixel_color & 0x1C0) & active[(phase >> 1) % 6]) && hue < 0x0e) {
-       emphasis = 1;
+    if (((pixel_color & 0x1C0) & active[(phase >> 1) % 6])) {
+        emphasis = 1;
     }
 
-    return IRE_levels[level][emphasis][(pixel_index)];
+    return IRE_levels[level][emphasis][pixel_index];
 }
 
 extern void
-crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
+crt_nes2ntsc(struct CRT* v, struct NES_NTSC_SETTINGS *s)
 {
     int x, y, xo, yo;
     int destw = AV_LEN;
@@ -491,7 +492,8 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
         if (desth > ((CRT_LINES * 63500) >> 16)) {
             desth = ((CRT_LINES * 63500) >> 16);
         }
-    } else {
+    }
+    else {
         destw = (AV_LEN * 55500) >> 16;
         desth = (CRT_LINES * 63500) >> 16;
     }
@@ -510,29 +512,29 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
 
     xo = PPUAV_BEG;
     yo = CRT_TOP;
-         
+
     /* align signal */
     xo = (xo & ~3);
 #if CRT_NES_HIRES
     switch (s->dot_crawl_offset % 3) {
-        case 0:
-            lo = 1;
-            po = 3;
-            break;
-        case 1:
-            lo = 3;
-            po = 1;
-            break;
-        case 2:
-            lo = 2;
-            po = 0;
-            break;
+    case 0:
+        lo = 1;
+        po = 3;
+        break;
+    case 1:
+        lo = 3;
+        po = 1;
+        break;
+    case 2:
+        lo = 2;
+        po = 0;
+        break;
     }
 #else
     lo = (s->dot_crawl_offset % 3); /* line offset to match color burst */
     po = lo;
     if (lo == 1) {
-        lo = 3;
+       lo = 3;
     }
 #endif
 
@@ -541,6 +543,7 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
     for (n = 0; n < CRT_VRES; n++) {
         int t; /* time */
         signed char *line = &v->analog[n * CRT_HRES];
+        int skipdot = (n == 14 && s->dot_skipped) ? PPUpx2pos(1) : 0;
         
         t = LINE_BEG;
 
@@ -556,7 +559,6 @@ crt_nes2ntsc(struct CRT *v, struct NES_NTSC_SETTINGS *s)
             while (t < CB_BEG) line[t++] = BLANK_LEVEL; /* BW + CB + BP */
             int cb;
             /* CB_CYCLES of color burst at 3.579545 Mhz */
-            int skipdot = PPUpx2pos(((n == 14 && s->dot_skipped) ? 1 : 0));
             for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ) - skipdot; t++) {
                 cb = s->cc[(t + po) & 3];
                 line[t] = BLANK_LEVEL + (cb * BURST_LEVEL) / s->ccs;
