@@ -74,6 +74,9 @@ extern "C" {
 #define CRT_TOP         15     /* first line with active video */
 #define CRT_BOT         255    /* final line with active video */
 #define CRT_LINES       (CRT_BOT - CRT_TOP) /* number of active video lines */
+		
+#define NES_AV_WIDTH    256
+#define NES_AV_HEIGHT   CRT_LINES
 
 struct CRT {
     signed char analog[CRT_INPUT_SIZE];
@@ -85,6 +88,7 @@ struct CRT {
     int outw, outh; /* output width/height */
     int *out; /* output image */
 	 int ccf[4]; /* color carrier reference for faster convergence */
+	 int frameblend; /* blend successive frames */
 };
 
 /* Initializes the library. Sets up filters.
@@ -124,6 +128,11 @@ struct NES_NTSC_SETTINGS {
      */
     int ccs;
 };
+
+/* Setup analog NTSC blanking and sync signal
+ *   s - struct containing settings to apply to this field
+ */
+extern void crtnes_setup_field(struct CRT* v, struct NES_NTSC_SETTINGS* s);
 
 /* Convert NES pixel data (generally 256x240) to analog NTSC signal
  *   s - struct containing settings to apply to this field

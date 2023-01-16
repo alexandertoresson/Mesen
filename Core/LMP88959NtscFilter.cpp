@@ -13,14 +13,14 @@ LMP88959NtscFilter::LMP88959NtscFilter(shared_ptr<Console> console) : BaseVideoF
 	_frameBuffer = new uint32_t[(256 * 2) * 240]();
 
 	crt_init(&_crt, (256 * 2), 240, reinterpret_cast<int*>(_frameBuffer));
-
-	_nesNTSC.w = static_cast<int>(PPU::ScreenWidth);
-	_nesNTSC.h = static_cast<int>(PPU::ScreenHeight);
+	_nesNTSC.w = PPU::ScreenWidth;
+	_nesNTSC.h = PPU::ScreenHeight;
 	_nesNTSC.cc[0] = 0;
 	_nesNTSC.cc[1] = 16;
 	_nesNTSC.cc[2] = 0;
 	_nesNTSC.cc[3] = -16;
 	_nesNTSC.ccs = 16;
+	crtnes_setup_field(&_crt, &_nesNTSC);
 }
 
 FrameInfo LMP88959NtscFilter::GetFrameInfo()
@@ -48,6 +48,7 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_crt.brightness = static_cast<int>(pictureSettings.Brightness * 100.0);
 	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
 	_crt.noise = static_cast<int>(ntscSettings.Noise * 500.0);
+	_crt.frameblend = static_cast<int>(false);
 
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
 	_nesNTSC.dot_skipped = _console->GetDotSkipped();
