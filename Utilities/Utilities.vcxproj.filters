@@ -175,7 +175,10 @@
     <ClInclude Include="gif.h">
       <Filter>Misc</Filter>
     </ClInclude>
-    <ClInclude Include="crt.h">
+    <ClInclude Include="crt_core.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="crt_nes.h">
       <Filter>Misc</Filter>
     </ClInclude>
   </ItemGroup>
@@ -306,6 +309,7 @@
     <ClCompile Include="AviRecorder.cpp">
       <Filter>Avi</Filter>
     </ClCompile>
-    <ClCompile Include="crt.cpp" />
+    <ClCompile Include="crt_core.cpp" />
+    <ClCompile Include="crt_nes.cpp" />
   </ItemGroup>
 </Project>

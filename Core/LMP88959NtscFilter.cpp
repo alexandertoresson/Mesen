@@ -9,28 +9,39 @@
 LMP88959NtscFilter::LMP88959NtscFilter(shared_ptr<Console> console) : BaseVideoFilter(console)
 {
 	memset(&_crt, 0, sizeof(CRT));
-	memset(&_nesNTSC, 0, sizeof(NES_NTSC_SETTINGS));
-	_frameBuffer = new uint32_t[(256 * 2) * 240]();
+	memset(&_nesNTSC, 0, sizeof(NTSC_SETTINGS));
+	_frameBuffer = new uint32_t[(PPUpx2pos(256)) * 240]();
 
-	crt_init(&_crt, (256 * 2), 240, reinterpret_cast<int*>(_frameBuffer));
+	crt_init(&_crt, (PPUpx2pos(256)), 240, reinterpret_cast<int*>(_frameBuffer));
+	crt_setup_field(&_crt);
+
 	_nesNTSC.w = PPU::ScreenWidth;
 	_nesNTSC.h = PPU::ScreenHeight;
-	_nesNTSC.cc[0] = 0;
-	_nesNTSC.cc[1] = 16;
-	_nesNTSC.cc[2] = 0;
-	_nesNTSC.cc[3] = -16;
-	_nesNTSC.ccs = 16;
-	crtnes_setup_field(&_crt, &_nesNTSC);
 }
 
 FrameInfo LMP88959NtscFilter::GetFrameInfo()
 {
 	OverscanDimensions overscan = GetOverscan();
+	uint32_t overscanLeft = overscan.Left > 0 ? PPUpx2pos(overscan.Left) : 0;
+	uint32_t overscanRight = overscan.Right > 0 ? PPUpx2pos(overscan.Right) : 0;
+
 	if (_keepVerticalRes) {
-		return { overscan.GetScreenWidth() * 2, overscan.GetScreenHeight(), PPU::ScreenWidth, PPU::ScreenHeight, 4 };
+		return {
+			(PPUpx2pos(PPU::ScreenWidth) - overscanLeft - overscanRight),
+			(PPU::ScreenHeight - overscan.Top - overscan.Bottom),
+			PPUpx2pos(PPU::ScreenWidth),
+			PPU::ScreenHeight,
+			4
+		};
 	}
 	else {
-		return { overscan.GetScreenWidth() * 2, overscan.GetScreenHeight() * 2, PPU::ScreenWidth, PPU::ScreenHeight, 4 };
+		return {
+			PPUpx2pos(PPU::ScreenWidth) - overscanLeft - overscanRight,
+			(PPU::ScreenHeight - overscan.Top - overscan.Bottom) * 2,
+			PPUpx2pos(PPU::ScreenWidth),
+			PPU::ScreenHeight * 2,
+			4
+		};
 	}
 }
 
@@ -47,12 +58,12 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_crt.saturation = static_cast<int>(((pictureSettings.Saturation + 1.0) / 2.0) * 25.0);
 	_crt.brightness = static_cast<int>(pictureSettings.Brightness * 100.0);
 	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
-	_crt.noise = static_cast<int>(ntscSettings.Noise * 500.0);
-	_crt.frameblend = static_cast<int>(false);
+	_noise = static_cast<int>(ntscSettings.Noise * 500.0);
+	_crt.blend = static_cast<int>(false);
 
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
-	_nesNTSC.dot_skipped = _console->GetDotSkipped();
-	_nesNTSC.borderdata = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
+	//_nesNTSC.dot_skipped = _console->GetDotSkipped();
+	_nesNTSC.border_color = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
 }
 
 void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
@@ -61,21 +72,20 @@ void LMP88959NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 
 	_nesNTSC.data = reinterpret_cast<unsigned short*>(_ppuOutputBuffer);
 
-	crt_nes2ntsc(&_crt, &_nesNTSC);
+	crt_modulate(&_crt, &_nesNTSC);
 
-	crt_draw(&_crt);
+	crt_demodulate(&_crt, _noise);
 	GenerateArgbFrame(_frameBuffer);
 
 }
 
 void LMP88959NtscFilter::GenerateArgbFrame(uint32_t* frameBuffer)
 {
-	int resMultiplier = 2;
 	uint32_t* outputBuffer = GetOutputBuffer();
 	OverscanDimensions overscan = GetOverscan();
-	int overscanLeft = (overscan.Left > 0 ? overscan.Left : 0) * resMultiplier;
-	int overscanRight = (overscan.Right > 0 ? overscan.Right : 0) * resMultiplier;
-	int rowWidth = PPU::ScreenWidth * resMultiplier;
+	int overscanLeft = overscan.Left > 0 ? PPUpx2pos(overscan.Left) : 0;
+	int overscanRight = overscan.Right > 0 ? PPUpx2pos(overscan.Right) : 0;
+	int rowWidth = PPUpx2pos(PPU::ScreenWidth);
 	int rowWidthOverscan = rowWidth - overscanLeft - overscanRight;
 
 	if (_keepVerticalRes) {
@@ -90,9 +100,7 @@ void LMP88959NtscFilter::GenerateArgbFrame(uint32_t* frameBuffer)
 		double scanlineIntensity = 1.0 - _console->GetSettings()->GetPictureSettings().ScanlineIntensity;
 		bool verticalBlend = _console->GetSettings()->GetNtscFilterSettings().VerticalBlend;
 
-		for (int y = (int)overscan.Top;
-			y <= PPU::ScreenHeight - 1 - overscan.Bottom;
-			y++) {
+		for (int y = PPU::ScreenHeight - 1 - overscan.Bottom; y >= (int)overscan.Top; y--) {
 			uint32_t const* in = frameBuffer + y * rowWidth;
 			uint32_t* out = outputBuffer + (y - overscan.Top) * 2 * rowWidthOverscan;
 
@@ -139,6 +147,6 @@ void LMP88959NtscFilter::GenerateArgbFrame(uint32_t* frameBuffer)
 LMP88959NtscFilter::~LMP88959NtscFilter()
 {
 	memset(&_crt, 0, sizeof(CRT));
-	memset(&_nesNTSC, 0, sizeof(NES_NTSC_SETTINGS));
+	memset(&_nesNTSC, 0, sizeof(NTSC_SETTINGS));
 	delete[] _frameBuffer;
 }

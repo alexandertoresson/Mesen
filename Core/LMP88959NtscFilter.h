@@ -3,15 +3,18 @@
 #pragma once
 #include "stdafx.h"
 #include "BaseVideoFilter.h"
-#include "../Utilities/crt.h"
+#include "../Utilities/crt_core.h"
+#include "../Utilities/crt_nes.h"
 
 class Console;
 
 class LMP88959NtscFilter : public BaseVideoFilter
 {
 private:
-	struct NES_NTSC_SETTINGS _nesNTSC;
+	struct NTSC_SETTINGS _nesNTSC;
 	struct CRT _crt;
+
+	int _noise = 0;
 
 	bool _keepVerticalRes = false;
 
