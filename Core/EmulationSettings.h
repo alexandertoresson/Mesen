@@ -247,7 +247,7 @@ struct NtscFilterSettings
 	double DecodeMatrixQB = 1.702f;
 
 	double Noise = 0;
-	bool FrameBlend = false;
+	bool FrameBlend = true;
 };
 
 enum class RamPowerOnState

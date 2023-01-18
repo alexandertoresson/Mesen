@@ -13,7 +13,7 @@ LMP88959NtscFilter::LMP88959NtscFilter(shared_ptr<Console> console) : BaseVideoF
 	_frameBuffer = new uint32_t[(PPUpx2pos(256)) * 240]();
 
 	crt_init(&_crt, (PPUpx2pos(256)), 240, reinterpret_cast<int*>(_frameBuffer));
-	crt_setup_field(&_crt);
+	setup_field(&_crt);
 
 	_nesNTSC.w = PPU::ScreenWidth;
 	_nesNTSC.h = PPU::ScreenHeight;

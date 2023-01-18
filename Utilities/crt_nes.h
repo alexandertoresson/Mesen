@@ -128,7 +128,7 @@ struct NTSC_SETTINGS {
 /* Setup analog NTSC blanking and sync signal
  *   s - struct containing settings to apply to this field
  */
-extern void crt_setup_field(struct CRT* v);
+extern void setup_field(struct CRT* v);
 
 #ifdef __cplusplus
 }
