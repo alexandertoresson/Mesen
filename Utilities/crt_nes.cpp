@@ -154,8 +154,8 @@ square_sample(int p, int phase)
  * basically factoring out the field setup since as long as CRT->analog
  * does not get cleared, all of this should remain the same every update
  */
-static void
-setup_field(struct CRT *v)
+extern void
+setup_field(struct CRT* v)
 {
     int n;
  
