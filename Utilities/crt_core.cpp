@@ -65,31 +65,20 @@ crt_sincos14(int *s, int *c, int n)
 /********************************* FILTERS ***********************************/
 /*****************************************************************************/
 
-#define HISTLEN     3
-#define HISTOLD     (HISTLEN - 1) /* oldest entry */
-#define HISTNEW     0             /* newest entry */
+/* convolution is much faster but the EQ looks softer, more authentic, and more analog */
+#define USE_CONVOLUTION 1
+#define USE_7_SAMPLE_KERNEL 0
+#define USE_6_SAMPLE_KERNEL 0
+#define USE_5_SAMPLE_KERNEL 0
 
-#define EQ_P        16 /* if changed, the gains will need to be adjusted */
-#define EQ_R        (1 << (EQ_P - 1)) /* rounding */
-#define EQ_CONVOLUTION 1 /* NOT 3 band equalizer, convolution instead */
-/* three band equalizer */
-static struct EQF {
-    int lf, hf; /* fractions */
-    int g[3]; /* gains */
-    int fL[4];
-    int fH[4];
-    int h[HISTLEN]; /* history */
-} eqY, eqI, eqQ;
+#if USE_CONVOLUTION
 
-/* f_lo - low cutoff frequency
- * f_hi - high cutoff frequency
- * rate - sampling rate
- * g_lo, g_mid, g_hi - gains
+/* NOT 3 band equalizer, faster convolution instead.
+ * eq function names preserved to keep code clean
  */
-#if EQ_CONVOLUTION
-#define USE_7_SAMPLE 0
-#define USE_6_SAMPLE 0
-#define USE_5_SAMPLE 0
+static struct EQF {
+    int h[5];
+} eqY, eqI, eqQ;
 
 /* params unused to keep the function the same */
 static void
@@ -112,30 +101,51 @@ eqf(struct EQF *f, int s)
     int i;
     int *h = f->h;
 
-    for (i = 6; i > 0; i--) {
+    for (i = 4; i > 0; i--) {
         h[i] = h[i - 1];
     }
     h[0] = s;
 #if USE_7_SAMPLE
     /* index : 0 1 2 3 4 5 6 */
     /* weight: 1 4 7 8 7 4 1 */
-    s = (s + h[6] + ((h[1] + h[5]) * 4) + ((h[2] + h[4]) * 7) + (h[3] * 8)) >> 5;
+    return (s + h[6] + ((h[1] + h[5]) * 4) + ((h[2] + h[4]) * 7) + (h[3] * 8)) >> 5;
 #elseif USE_6_SAMPLE
     /* index : 0 1 2 3 4 5 */
     /* weight: 1 3 4 4 3 1 */
-    s = (s + h[5] + 3 * (h[1] + h[4]) + 4 * (h[2] + h[3])) >> 4;
+    return (s + h[5] + 3 * (h[1] + h[4]) + 4 * (h[2] + h[3])) >> 4;
 #elseif USE_5_SAMPLE
-     /* index : 0 1 2 3 4 */
+    /* index : 0 1 2 3 4 */
     /* weight: 1 2 2 2 1 */
-    s = (s + h[4] + ((h[1] + h[2] + h[3]) << 1)) >> 3;
+    return (s + h[4] + ((h[1] + h[2] + h[3]) << 1)) >> 3;
 #else
-	 /* index : 0 1 2 3 */
-	 /* weight: 1 1 1 1*/
-	 s = (s + h[3] + h[1] + h[2]) >> 2;
+    /* index : 0 1 2 3 */
+    /* weight: 1 1 1 1*/
+    return (s + h[3] + h[1] + h[2]) >> 2;
 #endif
-    return s;
 }
+
 #else
+
+#define HISTLEN     3
+#define HISTOLD     (HISTLEN - 1) /* oldest entry */
+#define HISTNEW     0             /* newest entry */
+
+#define EQ_P        16 /* if changed, the gains will need to be adjusted */
+#define EQ_R        (1 << (EQ_P - 1)) /* rounding */
+/* three band equalizer */
+static struct EQF {
+    int lf, hf; /* fractions */
+    int g[3]; /* gains */
+    int fL[4];
+    int fH[4];
+    int h[HISTLEN]; /* history */
+} eqY, eqI, eqQ;
+
+/* f_lo - low cutoff frequency
+ * f_hi - high cutoff frequency
+ * rate - sampling rate
+ * g_lo, g_mid, g_hi - gains
+ */
 static void
 init_eq(struct EQF *f,
         int f_lo, int f_hi, int rate,
@@ -199,6 +209,7 @@ eqf(struct EQF *f, int s)
     
     return (r[0] + r[1] + r[2]);
 }
+
 #endif
 /*****************************************************************************/
 /***************************** PUBLIC FUNCTIONS ******************************/
