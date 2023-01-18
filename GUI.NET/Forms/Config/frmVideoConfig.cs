@@ -74,6 +74,7 @@ namespace Mesen.GUI.Forms.Config
 			AddBinding("NtscQFilterLength", trkQFilterLength);
 
 			AddBinding("NtscNoise", trkNoise);
+			AddBinding("NtscFrameBlend", chkFrameBlend);
 
 			AddBinding("RemoveSpriteLimit", chkRemoveSpriteLimit);
 			AddBinding("AdaptiveSpriteLimit", chkAdaptiveSpriteLimit);
@@ -177,6 +178,7 @@ namespace Mesen.GUI.Forms.Config
 						chkMergeFields.Visible = true;
 						chkColorimetryCorrection.Visible = false;
 						chkUseExternalPalette.Visible = true;
+						chkFrameBlend.Visible = false;
 
 						grpNtscFilter.Visible = true;
 					}
@@ -192,6 +194,7 @@ namespace Mesen.GUI.Forms.Config
 						chkMergeFields.Visible = false;
 						chkColorimetryCorrection.Visible = true;
 						chkUseExternalPalette.Visible = false;
+						chkFrameBlend.Visible = false;
 
 						grpNtscFilter.Visible = true;
 					}
@@ -205,6 +208,7 @@ namespace Mesen.GUI.Forms.Config
 						chkMergeFields.Visible = false;
 						chkColorimetryCorrection.Visible = false;
 						chkUseExternalPalette.Visible = false;
+						chkFrameBlend.Visible = true;
 
 						grpNtscFilter.Visible = true;
 					}
@@ -218,6 +222,7 @@ namespace Mesen.GUI.Forms.Config
 						chkMergeFields.Visible = false;
 						chkColorimetryCorrection.Visible = false;
 						chkUseExternalPalette.Visible = false;
+						chkFrameBlend.Visible = false;
 
 						grpNtscFilter.Visible = false;
 					}
@@ -349,6 +354,7 @@ namespace Mesen.GUI.Forms.Config
 			chkColorimetryCorrection.Checked = true;
 			chkKeepVerticalResolution.Checked = true;
 			chkUseExternalPalette.Checked = true;
+			chkFrameBlend.Checked = false;
 
 			trkYFilterLength.Value = 0;
 			trkIFilterLength.Value = 50;

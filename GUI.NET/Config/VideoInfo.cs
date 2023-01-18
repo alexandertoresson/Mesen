@@ -57,6 +57,7 @@ namespace Mesen.GUI.Config
 		public double NtscDecodeMatrixQB = 1.702;
 
 		[MinMax(0, 500)] public Int32 NtscNoise = 0;
+		public bool NtscFrameBlend = true;
 
 		public bool RemoveSpriteLimit = false;
 		public bool AdaptiveSpriteLimit = true;
@@ -121,7 +122,7 @@ namespace Mesen.GUI.Config
 			InteropEmu.SetVideoAspectRatio(videoInfo.AspectRatio, videoInfo.CustomAspectRatio);
 
 			InteropEmu.SetPictureSettings(videoInfo.Brightness / 100.0, videoInfo.Contrast / 100.0, videoInfo.Saturation / 100.0, videoInfo.Hue / 100.0, videoInfo.ScanlineIntensity / 100.0);
-			InteropEmu.SetNtscFilterSettings(videoInfo.NtscArtifacts / 100.0, videoInfo.NtscBleed / 100.0, videoInfo.NtscFringing / 100.0, videoInfo.NtscGamma / 100.0, videoInfo.NtscResolution / 100.0, videoInfo.NtscSharpness / 100.0, videoInfo.NtscMergeFields, videoInfo.NtscYFilterLength / 100.0, videoInfo.NtscIFilterLength / 100.0, videoInfo.NtscQFilterLength / 100.0, videoInfo.NtscDecodeMatrixIR, videoInfo.NtscDecodeMatrixQR, videoInfo.NtscDecodeMatrixIG, videoInfo.NtscDecodeMatrixQG, videoInfo.NtscDecodeMatrixIB, videoInfo.NtscDecodeMatrixQB, videoInfo.NtscVerticalBlend, videoInfo.NtscKeepVerticalResolution, videoInfo.NtscColorimetryCorrection, videoInfo.NtscUseExternalPalette, videoInfo.NtscNoise / 500.0);
+			InteropEmu.SetNtscFilterSettings(videoInfo.NtscArtifacts / 100.0, videoInfo.NtscBleed / 100.0, videoInfo.NtscFringing / 100.0, videoInfo.NtscGamma / 100.0, videoInfo.NtscResolution / 100.0, videoInfo.NtscSharpness / 100.0, videoInfo.NtscMergeFields, videoInfo.NtscYFilterLength / 100.0, videoInfo.NtscIFilterLength / 100.0, videoInfo.NtscQFilterLength / 100.0, videoInfo.NtscDecodeMatrixIR, videoInfo.NtscDecodeMatrixQR, videoInfo.NtscDecodeMatrixIG, videoInfo.NtscDecodeMatrixQG, videoInfo.NtscDecodeMatrixIB, videoInfo.NtscDecodeMatrixQB, videoInfo.NtscVerticalBlend, videoInfo.NtscKeepVerticalResolution, videoInfo.NtscColorimetryCorrection, videoInfo.NtscUseExternalPalette, videoInfo.NtscNoise / 500.0, videoInfo.NtscFrameBlend);
 
 			if(!string.IsNullOrWhiteSpace(videoInfo.PaletteData)) {
 				try {

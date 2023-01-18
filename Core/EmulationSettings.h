@@ -247,6 +247,7 @@ struct NtscFilterSettings
 	double DecodeMatrixQB = 1.702f;
 
 	double Noise = 0;
+	bool FrameBlend = false;
 };
 
 enum class RamPowerOnState
@@ -1256,7 +1257,8 @@ public:
 		bool keepVerticalResolution,
 		bool colorimetryCorrection,
 		bool useExternalPalette,
-		double Noise)
+		double Noise,
+		bool FrameBlend)
 	{
 		_ntscFilterSettings.Artifacts = artifacts;
 		_ntscFilterSettings.Bleed = bleed;
@@ -1284,6 +1286,7 @@ public:
 		_ntscFilterSettings.KeepVerticalResolution = keepVerticalResolution;
 		_ntscFilterSettings.ColorimetryCorrection = colorimetryCorrection;
 		_ntscFilterSettings.Noise = Noise;
+		_ntscFilterSettings.FrameBlend = FrameBlend;
 	}
 
 	NtscFilterSettings GetNtscFilterSettings()

@@ -65,11 +65,13 @@ namespace Mesen.GUI.Forms.Config
             this.grpNtscFilter = new System.Windows.Forms.GroupBox();
             this.tlpNtscFilter3 = new System.Windows.Forms.TableLayoutPanel();
             this.trkNoise = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
+            this.chkFrameBlend = new System.Windows.Forms.CheckBox();
             this.tlpNtscFilter2 = new System.Windows.Forms.TableLayoutPanel();
             this.trkYFilterLength = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
             this.trkIFilterLength = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
             this.trkQFilterLength = new Mesen.GUI.Controls.ctrlHorizontalTrackbar();
             this.tableLayoutPanel19 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel20 = new System.Windows.Forms.TableLayoutPanel();
             this.chkColorimetryCorrection = new System.Windows.Forms.CheckBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.tlpNtscFilter1 = new System.Windows.Forms.TableLayoutPanel();
@@ -182,6 +184,7 @@ namespace Mesen.GUI.Forms.Config
             this.tlpNtscFilter3.SuspendLayout();
             this.tlpNtscFilter2.SuspendLayout();
             this.tableLayoutPanel19.SuspendLayout();
+            this.tableLayoutPanel20.SuspendLayout();
             this.tlpNtscFilter1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
             this.grpCommon.SuspendLayout();
@@ -706,11 +709,13 @@ namespace Mesen.GUI.Forms.Config
             this.tlpNtscFilter3.ColumnCount = 1;
             this.tlpNtscFilter3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tlpNtscFilter3.Controls.Add(this.trkNoise, 0, 0);
+            this.tlpNtscFilter3.Controls.Add(this.tableLayoutPanel20, 0, 1);
             this.tlpNtscFilter3.Location = new System.Drawing.Point(3, 16);
             this.tlpNtscFilter3.Margin = new System.Windows.Forms.Padding(0);
             this.tlpNtscFilter3.Name = "tlpNtscFilter3";
-            this.tlpNtscFilter3.RowCount = 1;
+            this.tlpNtscFilter3.RowCount = 2;
             this.tlpNtscFilter3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tlpNtscFilter3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tlpNtscFilter3.Size = new System.Drawing.Size(253, 350);
             this.tlpNtscFilter3.TabIndex = 7;
             // 
@@ -728,6 +733,28 @@ namespace Mesen.GUI.Forms.Config
             this.trkNoise.TabIndex = 26;
             this.trkNoise.Text = "Signal noise";
             this.trkNoise.Value = 0;
+            // 
+            // tableLayoutPanel20
+            // 
+            this.tableLayoutPanel20.ColumnCount = 1;
+            this.tableLayoutPanel20.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel20.Controls.Add(this.chkFrameBlend, 0, 0);
+            this.tableLayoutPanel20.Location = new System.Drawing.Point(3, 153);
+            this.tableLayoutPanel20.Name = "tableLayoutPanel20";
+            this.tableLayoutPanel20.RowCount = 1;
+            this.tableLayoutPanel20.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel20.Size = new System.Drawing.Size(247, 50);
+            this.tableLayoutPanel20.TabIndex = 27;
+            // 
+            // chkFrameBlend
+            // 
+            this.chkFrameBlend.AutoSize = true;
+            this.chkFrameBlend.Location = new System.Drawing.Point(3, 3);
+            this.chkFrameBlend.Name = "chkFrameBlend";
+            this.chkFrameBlend.Size = new System.Drawing.Size(101, 17);
+            this.chkFrameBlend.TabIndex = 32;
+            this.chkFrameBlend.Text = "Frame blend";
+            this.chkFrameBlend.UseVisualStyleBackColor = true;
             // 
             // tlpNtscFilter2
             // 
@@ -799,9 +826,8 @@ namespace Mesen.GUI.Forms.Config
             // 
             // tableLayoutPanel19
             // 
-            this.tableLayoutPanel19.ColumnCount = 2;
-            this.tableLayoutPanel19.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 57.08502F));
-            this.tableLayoutPanel19.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 42.91498F));
+            this.tableLayoutPanel19.ColumnCount = 1;
+            this.tableLayoutPanel19.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel19.Controls.Add(this.chkColorimetryCorrection, 0, 0);
             this.tableLayoutPanel19.Controls.Add(this.checkBox1, 0, 1);
             this.tableLayoutPanel19.Location = new System.Drawing.Point(3, 153);
@@ -2245,6 +2271,8 @@ namespace Mesen.GUI.Forms.Config
             this.tlpNtscFilter2.PerformLayout();
             this.tableLayoutPanel19.ResumeLayout(false);
             this.tableLayoutPanel19.PerformLayout();
+            this.tableLayoutPanel20.ResumeLayout(false);
+            this.tableLayoutPanel20.PerformLayout();
             this.tlpNtscFilter1.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
             this.tableLayoutPanel6.PerformLayout();
@@ -2429,7 +2457,9 @@ namespace Mesen.GUI.Forms.Config
 		private System.Windows.Forms.CheckBox chkKeepVerticalResolution;
 		private System.Windows.Forms.TableLayoutPanel tlpNtscFilter3;
 		private ctrlHorizontalTrackbar trkNoise;
+		private System.Windows.Forms.CheckBox chkFrameBlend;
 		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel19;
+		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel20;
 		private System.Windows.Forms.CheckBox chkColorimetryCorrection;
 		private System.Windows.Forms.CheckBox checkBox1;
    }

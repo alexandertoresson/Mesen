@@ -59,10 +59,9 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_crt.brightness = static_cast<int>(pictureSettings.Brightness * 100.0);
 	_crt.contrast = static_cast<int>(((pictureSettings.Contrast + 1.0) / 2.0) * 360.0);
 	_noise = static_cast<int>(ntscSettings.Noise * 500.0);
-	_crt.blend = static_cast<int>(false);
+	_crt.blend = static_cast<int>(ntscSettings.FrameBlend);
 
 	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
-	//_nesNTSC.dot_skipped = _console->GetDotSkipped();
 	_nesNTSC.border_color = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
 }
 
