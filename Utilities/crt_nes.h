@@ -110,7 +110,7 @@ extern "C" {
 
 /* IRE units (100 = 1.0V, -40 = 0.0V) */
 /* https://www.nesdev.org/wiki/NTSC_video#Terminated_measurement */
-#define WHITE_LEVEL      110
+#define WHITE_LEVEL      100
 #define BURST_LEVEL      30
 #define BLACK_LEVEL      0
 #define BLANK_LEVEL      0
