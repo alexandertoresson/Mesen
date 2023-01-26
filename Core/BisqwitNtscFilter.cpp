@@ -13,6 +13,36 @@ BisqwitNtscFilter::BisqwitNtscFilter(shared_ptr<Console> console, int resDivider
 	_resDivider = resDivider;
 	_stopThread = false;
 	_workDone = false;
+
+	const int8_t signalLumaLow[2][4] = { { -29, -15, 22, 71 }, { -38, -28, -1, 34 } };
+	const int8_t signalLumaHigh[2][4] = { { 32, 66, 105, 105 }, { 6, 31, 58, 58 } };
+
+	//Precalculate the low and high signal chosen for each 64 base colors
+	//with their respective attenuated values
+	for (int h = 0; h <= 1; h++) {
+		for (int i = 0; i <= 0x3F; i++) {
+
+			int m = signalLumaLow[h][i / 0x10];
+			int q = signalLumaHigh[h][i / 0x10];
+
+			if ((i & 0x0F) == 0x0D) {
+				q = m;
+			}
+			else if ((i & 0x0F) == 0) {
+				m = q;
+			}
+			else if ((i & 0x0F) >= 0x0E) {
+				// colors $xE and $xF are not affected by emphasis
+				// https://forums.nesdev.org/viewtopic.php?p=160669#p160669
+				m = signalLumaLow[0][1];
+				q = signalLumaLow[0][1];
+			}
+
+			_signalLow[h][i] = m;
+			_signalHigh[h][i] = q;
+		}
+	}
+
 	_startingPhase = _console->GetStartingPhase();
 	_extraThread = std::thread([=]() {
 		//Worker thread to improve decode speed
@@ -176,10 +206,7 @@ void BisqwitNtscFilter::GenerateNtscSignal(int8_t *ntscSignal, int &phase, int r
 
 		int8_t voltage;
 		for(int j = 0; j < _signalsPerPixel; j++) {
-			// colors $xE and $xF are not affected by emphasis
-			// https://forums.nesdev.org/viewtopic.php?p=160669#p160669
-			if ((color & 0x0F) <= 0x0D)
-				attenuate = (phaseBitmask & emphasis_wave);
+			attenuate = (phaseBitmask & emphasis_wave);
 
 			voltage = _signalHigh[attenuate][color];
 			
