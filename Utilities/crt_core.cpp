@@ -256,8 +256,8 @@ crt_init(struct CRT *v, int w, int h, int *out)
 }
 
 /* search windows, in samples */
-#define HSYNC_WINDOW 6
-#define VSYNC_WINDOW 6
+#define HSYNC_WINDOW 8
+#define VSYNC_WINDOW 8
 
 extern void
 crt_demodulate(struct CRT *v, int noise)
