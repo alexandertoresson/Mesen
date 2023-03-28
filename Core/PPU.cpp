@@ -1189,6 +1189,11 @@ void PPU::SendFrame()
 	//Get phase at the start of the current frame (341*241 cycles ago)
 	_videoPhase = ((_masterClock / _masterClockDivider) - 82181) % 3;
 
+	if (_settings->GetPpuExtraScanlinesAfterNmi() != 0 || _settings->GetPpuExtraScanlinesBeforeNmi() != 0) {
+		//Force 2-phase pattern when overclocking is used
+		_videoPhase = _frameCount & 0x01;
+	}
+
 	_console->GetNotificationManager()->SendNotification(ConsoleNotificationType::PpuFrameDone, _currentOutputBuffer);
 
 #ifdef LIBRETRO
