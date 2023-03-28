@@ -110,6 +110,7 @@ class PPU : public IMemoryHandler, public Snapshotable
 		bool _corruptOamRow[32];
 
 		bool _isDotSkipped;
+		uint32_t _videoPhase;
 
 		void UpdateStatusFlag();
 
@@ -219,10 +220,10 @@ class PPU : public IMemoryHandler, public Snapshotable
 			return _frameCount;
 		}
 
-		uint8_t GetStartingPhase()
+		uint8_t GetVideoPhase()
 		{
 			// https://forums.nesdev.org/viewtopic.php?p=30625#p30625
-			return _nesModel == NesModel::NTSC ? _cycle % 3 : 0;
+			return _videoPhase;
 		}
 
 		bool GetDotSkipped()

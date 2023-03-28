@@ -11,8 +11,6 @@ NtscFilter::NtscFilter(shared_ptr<Console> console) : BaseVideoFilter(console)
 	_ntscSetup = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	_ntscBuffer = new uint32_t[NES_NTSC_OUT_WIDTH(256) * 240]();
 
-
-	_startingPhase = _console->GetStartingPhase();
 	_extraThread = std::thread([=]() {
 		//Worker thread to improve decode speed
 		while (!_stopThread) {
@@ -20,7 +18,7 @@ NtscFilter::NtscFilter(shared_ptr<Console> console) : BaseVideoFilter(console)
 			if (_stopThread) {
 				break;
 			}
-			uint8_t phase = _startingPhase;
+			uint8_t phase = GetVideoPhase();
 			for (int i = 0; i < 120; i++) {
 				nes_ntsc_blit(&_ntscData,
 					// input += in_row_width;
@@ -150,7 +148,6 @@ void NtscFilter::OnBeforeApplyFilter()
 
 		nes_ntsc_init(&_ntscData, &_ntscSetup);
 	}
-	_startingPhase = _console->GetStartingPhase();
 }
 
 void NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
@@ -159,7 +156,7 @@ void NtscFilter::ApplyFilter(uint16_t *ppuOutputBuffer)
 
 	_workDone = false;
 	_waitWork.Signal();
-	uint8_t phase = _startingPhase;
+	uint8_t phase = GetVideoPhase();
 	for (int i = 120; i < 240; i++) {
 		nes_ntsc_blit(&_ntscData,
 			// input += in_row_width;

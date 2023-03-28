@@ -1186,6 +1186,8 @@ void PPU::DebugCopyOutputBuffer(uint16_t *target)
 void PPU::SendFrame()
 {
 	UpdateGrayscaleAndIntensifyBits();
+	//Get phase at the start of the current frame (341*241 cycles ago)
+	_videoPhase = ((_masterClock / _masterClockDivider) - 82181) % 3;
 
 	_console->GetNotificationManager()->SendNotification(ConsoleNotificationType::PpuFrameDone, _currentOutputBuffer);
 

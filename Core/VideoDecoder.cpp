@@ -102,7 +102,7 @@ void VideoDecoder::DecodeFrame(bool synchronous)
 	if(_hdFilterEnabled) {
 		((HdVideoFilter*)_videoFilter.get())->SetHdScreenTiles(_hdScreenInfo);
 	}
-	_videoFilter->SendFrame(_ppuOutputBuffer, _frameNumber);
+	_videoFilter->SendFrame(_ppuOutputBuffer, _frameNumber, _videoPhase);
 
 	uint32_t* outputBuffer = _videoFilter->GetOutputBuffer();
 	FrameInfo frameInfo = _videoFilter->GetFrameInfo();
@@ -195,6 +195,7 @@ void VideoDecoder::UpdateFrame(void *ppuOutputBuffer, HdScreenInfo *hdScreenInfo
 	}
 	
 	_frameNumber = _console->GetFrameCount();
+	_videoPhase = _console->GetVideoPhase();
 	_hdScreenInfo = hdScreenInfo;
 	_ppuOutputBuffer = (uint16_t*)ppuOutputBuffer;
 	_frameChanged = true;
@@ -271,7 +272,7 @@ void VideoDecoder::TakeScreenshot(std::stringstream &stream, bool rawScreenshot)
 	if(rawScreenshot) {
 		//Take screenshot without NTSC filter on
 		DefaultVideoFilter filter(_console);
-		filter.SendFrame(_ppuOutputBuffer, 0);
+		filter.SendFrame(_ppuOutputBuffer, 0, 0);
 		filter.TakeScreenshot(_videoFilterType, "", &stream, rawScreenshot);
 	} else if(_videoFilter) {
 		_videoFilter->TakeScreenshot(_videoFilterType, "", &stream, rawScreenshot);

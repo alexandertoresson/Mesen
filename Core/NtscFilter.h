@@ -13,7 +13,6 @@ private:
 	nes_ntsc_t _ntscData;
 	bool _keepVerticalRes = false;
 	bool _useExternalPalette = true;
-	uint8_t _startingPhase = 0;
 	uint8_t _palette[512 * 3];
 	uint16_t* _ppuOutputBuffer = nullptr;
 	uint32_t* _ntscBuffer;

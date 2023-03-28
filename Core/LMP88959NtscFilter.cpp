@@ -61,7 +61,7 @@ void LMP88959NtscFilter::OnBeforeApplyFilter()
 	_noise = static_cast<int>(ntscSettings.Noise * 500.0);
 	_crt.blend = static_cast<int>(ntscSettings.FrameBlend);
 
-	_nesNTSC.dot_crawl_offset = _console->GetStartingPhase();
+	_nesNTSC.dot_crawl_offset = GetVideoPhase();
 	_nesNTSC.border_color = _ntscBorder ? _console->GetPpu()->GetCurrentBgColor() : 0x0F;
 }
 

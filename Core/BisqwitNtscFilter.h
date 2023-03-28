@@ -41,8 +41,6 @@ private:
 	int8_t _signalLow[2][0x40];
 	int8_t _signalHigh[2][0x40];
 
-	uint8_t _startingPhase = 0;
-
 	void RecursiveBlend(int iterationCount, uint64_t *output, uint64_t *currentLine, uint64_t *nextLine, int pixelsPerCycle, bool verticalBlend);
 	
 	void NtscDecodeLine(int width, const int8_t* signal, uint32_t* target, int phase0);
