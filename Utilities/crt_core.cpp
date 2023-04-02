@@ -61,6 +61,23 @@ crt_sincos14(int *s, int *c, int n)
     }
 }
 
+extern int
+crt_bpp4fmt(int format)
+{
+    switch (format) {
+        case CRT_PIX_FORMAT_RGB: 
+        case CRT_PIX_FORMAT_BGR: 
+            return 3;
+        case CRT_PIX_FORMAT_ARGB:
+        case CRT_PIX_FORMAT_RGBA:
+        case CRT_PIX_FORMAT_ABGR:
+        case CRT_PIX_FORMAT_BGRA:
+            return 4;
+        default:
+            return 0;
+    }
+}
+
 /*****************************************************************************/
 /********************************* FILTERS ***********************************/
 /*****************************************************************************/
@@ -70,6 +87,12 @@ crt_sincos14(int *s, int *c, int n)
 #define USE_7_SAMPLE_KERNEL 0
 #define USE_6_SAMPLE_KERNEL 0
 #define USE_5_SAMPLE_KERNEL 0
+
+#if (CRT_CC_SAMPLES != 4)
+/* the current convolutions do not filter properly at > 4 samples */
+#undef USE_CONVOLUTION
+#define USE_CONVOLUTION 0
+#endif
 
 #if USE_CONVOLUTION
 
@@ -211,15 +234,17 @@ eqf(struct EQF *f, int s)
 }
 
 #endif
+
 /*****************************************************************************/
 /***************************** PUBLIC FUNCTIONS ******************************/
 /*****************************************************************************/
 
 extern void
-crt_resize(struct CRT *v, int w, int h, int *out)
+crt_resize(struct CRT *v, int w, int h, int f, unsigned char *out)
 {    
     v->outw = w;
     v->outh = h;
+    v->out_format = f;
     v->out = out;
 }
 
@@ -237,10 +262,10 @@ crt_reset(struct CRT *v)
 }
 
 extern void
-crt_init(struct CRT *v, int w, int h, int *out)
+crt_init(struct CRT *v, int w, int h, int f, unsigned char *out)
 {
     memset(v, 0, sizeof(struct CRT));
-    crt_resize(v, w, h, out);
+    crt_resize(v, w, h, f, out);
     crt_reset(v);
     v->rn = 194;
     
@@ -250,9 +275,18 @@ crt_init(struct CRT *v, int w, int h, int *out)
     /* band gains are pre-scaled as 16-bit fixed point
      * if you change the EQ_P define, you'll need to update these gains too
      */
-    init_eq(&eqY, kHz2L(1500), kHz2L(3000), CRT_HRES, 65536, 8192, 9175);
+#if (CRT_CC_SAMPLES == 4)
+    init_eq(&eqY, kHz2L(1500), kHz2L(3000), CRT_HRES, 65536, 8192, 9175);  
     init_eq(&eqI, kHz2L(80),   kHz2L(1150), CRT_HRES, 65536, 65536, 1311);
     init_eq(&eqQ, kHz2L(80),   kHz2L(1000), CRT_HRES, 65536, 65536, 0);
+#elif (CRT_CC_SAMPLES == 5)
+    init_eq(&eqY, kHz2L(1500), kHz2L(3000), CRT_HRES, 65536, 12192, 7775);
+    init_eq(&eqI, kHz2L(80),   kHz2L(1150), CRT_HRES, 65536, 65536, 1311);
+    init_eq(&eqQ, kHz2L(80),   kHz2L(1000), CRT_HRES, 65536, 65536, 0);
+#else
+#error "NTSC-CRT currently only supports 4 or 5 samples per chroma period."
+#endif
+
 }
 
 /* search windows, in samples */
@@ -262,7 +296,8 @@ crt_init(struct CRT *v, int w, int h, int *out)
 extern void
 crt_demodulate(struct CRT *v, int noise)
 {
-    struct {
+    /* made static so all this data does not go on the stack */
+    static struct {
         int y, i, q;
     } out[AV_LEN + 1], *yiqA, *yiqB;
     int i, j, line, rn;
@@ -273,10 +308,17 @@ crt_demodulate(struct CRT *v, int noise)
     int huesn, huecs;
     int xnudge = -3, ynudge = 3;
     int bright = v->brightness - (BLACK_LEVEL + v->black_point);
+    int bpp, pitch;
 #if CRT_DO_BLOOM
     int prev_e; /* filtered beam energy per scan line */
     int max_e; /* approx maximum energy in a scan line */
 #endif
+    
+    bpp = crt_bpp4fmt(v->out_format);
+    if (bpp == 0) {
+        return;
+    }
+    pitch = v->outw * bpp;
     
     crt_sincos14(&huesn, &huecs, ((v->hue % 360) + 33) * 8192 / 180);
     huesn >>= 11; /* make 4-bit */
@@ -339,8 +381,13 @@ vsync_found:
         unsigned pos, ln;
         int scanL, scanR, dx;
         int L, R;
-        int *cL, *cR;
-        int wave[4];
+        unsigned char *cL, *cR;
+#if (CRT_CC_SAMPLES == 4)
+        int wave[CRT_CC_SAMPLES];
+#else
+        int waveI[CRT_CC_SAMPLES];
+        int waveQ[CRT_CC_SAMPLES];
+#endif
         int dci, dcq; /* decoded I, Q */
         int xpos, ypos;
         int beg, end;
@@ -348,9 +395,9 @@ vsync_found:
 #if CRT_DO_BLOOM
         int line_w;
 #endif
-        
-        beg = (line - CRT_TOP + 0) * v->outh / CRT_LINES + field;
-        end = (line - CRT_TOP + 1) * v->outh / CRT_LINES + field;
+  
+        beg = (line - CRT_TOP + 0) * (v->outh + v->v_fac) / CRT_LINES + field;
+        end = (line - CRT_TOP + 1) * (v->outh + v->v_fac) / CRT_LINES + field;
 
         if (beg >= v->outh) { continue; }
         if (end > v->outh) { end = v->outh; }
@@ -377,27 +424,61 @@ vsync_found:
         ypos = POSMOD(line + v->vsync + ynudge, CRT_VRES);
         pos = xpos + ypos * CRT_HRES;
         
-        ccr = v->ccf[ypos & 3];
-        sig = v->inp + ln + (v->hsync & ~3); /* burst @ 1/CB_FREQ sample rate */
+        ccr = v->ccf[ypos % CRT_CC_VPER];
+#if (CRT_CC_SAMPLES == 4)
+        sig = v->inp + ln + (v->hsync & ~3); /* faster */
+#else
+        sig = v->inp + ln + (v->hsync - (v->hsync % CRT_CC_SAMPLES));
+#endif
         for (i = CB_BEG; i < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); i++) {
             int p, n;
-            p = ccr[i & 3] * 127 / 128; /* fraction of the previous */
+            p = ccr[i % CRT_CC_SAMPLES] * 127 / 128; /* fraction of the previous */
             n = sig[i];                 /* mixed with the new sample */
-            ccr[i & 3] = p + n;
+            ccr[i % CRT_CC_SAMPLES] = p + n;
         }
- 
-        phasealign = POSMOD(v->hsync, 4);
 
+        phasealign = POSMOD(v->hsync, CRT_CC_SAMPLES);
+        
+#if (CRT_CC_SAMPLES == 4)
         /* amplitude of carrier = saturation, phase difference = hue */
         dci = ccr[(phasealign + 1) & 3] - ccr[(phasealign + 3) & 3];
         dcq = ccr[(phasealign + 2) & 3] - ccr[(phasealign + 0) & 3];
 
-        /* rotate them by the hue adjustment angle */
         wave[0] = ((dci * huecs - dcq * huesn) >> 4) * v->saturation;
         wave[1] = ((dcq * huecs + dci * huesn) >> 4) * v->saturation;
         wave[2] = -wave[0];
         wave[3] = -wave[1];
-        
+#elif (CRT_CC_SAMPLES == 5)
+        {
+            int dciA, dciB;
+            int dcqA, dcqB;
+            int ang = (v->hue % 360);
+            int off180 = CRT_CC_SAMPLES / 2;
+            int off90 = CRT_CC_SAMPLES / 4;
+            int peakA = phasealign + off90;
+            int peakB = phasealign + 0;
+            dciA = dciB = dcqA = dcqB = 0;
+            /* amplitude of carrier = saturation, phase difference = hue */
+            dciA = ccr[(peakA) % CRT_CC_SAMPLES];
+            /* average */
+            dciB = (ccr[(peakA + off180) % CRT_CC_SAMPLES]
+                  + ccr[(peakA + off180 + 1) % CRT_CC_SAMPLES]) / 2;
+            dcqA = ccr[(peakB + off180) % CRT_CC_SAMPLES];
+            dcqB = ccr[(peakB) % CRT_CC_SAMPLES];
+            dci = dciA - dciB;
+            dcq = dcqA - dcqB;
+            /* create wave tables and rotate them by the hue adjustment angle */
+            for (i = 0; i < CRT_CC_SAMPLES; i++) {
+                int sn, cs;
+                crt_sincos14(&sn, &cs, ang * 8192 / 180);
+                waveI[i] = ((dci * cs + dcq * sn) >> 15) * v->saturation;
+                /* Q is offset by 90 */
+                crt_sincos14(&sn, &cs, (ang + 90) * 8192 / 180);
+                waveQ[i] = ((dci * cs + dcq * sn) >> 15) * v->saturation;
+                ang += (360 / CRT_CC_SAMPLES);
+            }
+        }
+#endif
         sig = v->inp + pos;
 #if CRT_DO_BLOOM
         s = 0;
@@ -425,14 +506,22 @@ vsync_found:
         reset_eq(&eqI);
         reset_eq(&eqQ);
         
+#if (CRT_CC_SAMPLES == 4)
         for (i = L; i < R; i++) {
             out[i].y = eqf(&eqY, sig[i] + bright) << 4;
             out[i].i = eqf(&eqI, sig[i] * wave[(i + 0) & 3] >> 9) >> 3;
             out[i].q = eqf(&eqQ, sig[i] * wave[(i + 3) & 3] >> 9) >> 3;
         }
+#else
+        for (i = L; i < R; i++) {
+            out[i].y = eqf(&eqY, sig[i] + bright) << 4;
+            out[i].i = eqf(&eqI, sig[i] * waveI[i % CRT_CC_SAMPLES] >> 9) >> 3;
+            out[i].q = eqf(&eqQ, sig[i] * waveQ[i % CRT_CC_SAMPLES] >> 9) >> 3;
+        } 
+#endif
 
-        cL = v->out + beg * v->outw;
-        cR = cL + v->outw;
+        cL = v->out + (beg * pitch);
+        cR = cL + pitch;
 
         for (pos = scanL; pos < scanR && cL < cR; pos += dx) {
             int y, i, q;
@@ -462,21 +551,69 @@ vsync_found:
             if (r > 255) r = 255;
             if (g > 255) g = 255;
             if (b > 255) b = 255;
-            
+
             if (v->blend) {
                 aa = (r << 16 | g << 8 | b);
-                bb = *cL;
+
+                switch (v->out_format) {
+                    case CRT_PIX_FORMAT_RGB:
+                    case CRT_PIX_FORMAT_RGBA:
+                        bb = cL[0] << 16 | cL[1] << 8 | cL[2];
+                        break;
+                    case CRT_PIX_FORMAT_BGR: 
+                    case CRT_PIX_FORMAT_BGRA:
+                        bb = cL[2] << 16 | cL[1] << 8 | cL[0];
+                        break;
+                    case CRT_PIX_FORMAT_ARGB:
+                        bb = cL[1] << 16 | cL[2] << 8 | cL[3];
+                        break;
+                    case CRT_PIX_FORMAT_ABGR:
+                        bb = cL[3] << 16 | cL[2] << 8 | cL[1];
+                        break;
+                    default:
+                        bb = 0;
+                        break;
+                }
+
                 /* blend with previous color there */
-                *cL++ = (((aa & 0xfefeff) >> 1) + ((bb & 0xfefeff) >> 1));
+                bb = (((aa & 0xfefeff) >> 1) + ((bb & 0xfefeff) >> 1));
             } else {
-                *cL++ = (r << 16 | g << 8 | b);
+                bb = (r << 16 | g << 8 | b);
             }
+
+            switch (v->out_format) {
+                case CRT_PIX_FORMAT_RGB:
+                case CRT_PIX_FORMAT_RGBA:
+                    cL[0] = bb >> 16 & 0xff;
+                    cL[1] = bb >>  8 & 0xff;
+                    cL[2] = bb >>  0 & 0xff;
+                    break;
+                case CRT_PIX_FORMAT_BGR: 
+                case CRT_PIX_FORMAT_BGRA:
+                    cL[0] = bb >>  0 & 0xff;
+                    cL[1] = bb >>  8 & 0xff;
+                    cL[2] = bb >> 16 & 0xff;
+                    break;
+                case CRT_PIX_FORMAT_ARGB:
+                    cL[1] = bb >> 16 & 0xff;
+                    cL[2] = bb >>  8 & 0xff;
+                    cL[3] = bb >>  0 & 0xff;
+                    break;
+                case CRT_PIX_FORMAT_ABGR:
+                    cL[1] = bb >>  0 & 0xff;
+                    cL[2] = bb >>  8 & 0xff;
+                    cL[3] = bb >> 16 & 0xff;
+                    break;
+                default:
+                    break;
+            }
+
+            cL += bpp;
         }
         
         /* duplicate extra lines */
-        ln = v->outw * sizeof(int);
         for (s = beg + 1; s < (end - v->scanlines); s++) {
-            memcpy(v->out + s * v->outw, v->out + (s - 1) * v->outw, ln);
+            memcpy(v->out + s * pitch, v->out + (s - 1) * pitch, pitch);
         }
     }
 }

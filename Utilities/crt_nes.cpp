@@ -74,10 +74,11 @@ const int8_t IRE_levels[2][2][0x40]{
 };
 
 /* generate the square wave for a given 9-bit pixel and phase */
+/* note from persune: highly optimized for realtime use in Mesen*/
 static int
 square_sample(int p, int phase)
 {
-    static const int active[6] = {
+    static int active[6] = {
         0300, 0100,
         0500, 0400,
         0600, 0200
@@ -96,6 +97,12 @@ square_sample(int p, int phase)
 }
 
 #define NES_OPTIMIZED 1
+/* toggle drawing of NES border
+ * (normally not in visible region, but it depends on your emulator)
+ * highly recommended to keep disabled for better performance if the border
+ * is not visible in your emulator.
+ */
+#define NES_BORDER    1
 
 /* the optimized version is NOT the most optimized version, it just performs
  * some simple refactoring to prevent a few redundant computations
@@ -107,8 +114,8 @@ square_sample(int p, int phase)
  * basically factoring out the field setup since as long as CRT->analog
  * does not get cleared, all of this should remain the same every update
  */
-extern void
-setup_field(struct CRT* v)
+static void
+setup_field(struct CRT *v)
 {
     int n;
  
@@ -135,46 +142,43 @@ setup_field(struct CRT* v)
 extern void
 crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
 {
-    static int init = 0;
     int x, y, xo, yo;
     int destw = AV_LEN;
     int desth = CRT_LINES;
     int n, phase;
-    int po, lo;
-    int iccf[4];
-    int ccburst[4]; /* color phase for burst */
-    int burst_level[4];
+    int iccf[CRT_CC_VPER][CRT_CC_SAMPLES];
+    int ccburst[CRT_CC_VPER][CRT_CC_SAMPLES]; /* color phase for burst */
     int sn, cs;
-    if (!init) {
+    static int phasetab[CRT_CC_VPER] = { 0, 4, 8 };
+        
+    if (!s->field_initialized) {
         setup_field(v);
-        init = 1;
+        s->field_initialized = 1;
     }
-    for (x = 0; x < 4; x++) {
-        n = s->hue + x * 90;
-        crt_sincos14(&sn, &cs, (n + 33) * 8192 / 180);
-        ccburst[x] = sn >> 10;
+
+    for (y = 0; y < CRT_CC_VPER; y++) {
+        xo = (y + s->dot_crawl_offset) * (360 / CRT_CC_VPER);
+        for (x = 0; x < CRT_CC_SAMPLES; x++) {
+            n = (s->hue + x * (360 / CRT_CC_SAMPLES) + xo + 33) % 360;
+            crt_sincos14(&sn, &cs, n * 8192 / 180);
+            ccburst[y][x] = sn >> 10;
+        }
     }
-    xo = AV_BEG;
-    yo = CRT_TOP;
+
+    xo = AV_BEG  + s->xoffset;
+    yo = CRT_TOP + s->yoffset;
          
     /* align signal */
     xo = (xo & ~3);
     
-    /* this mess of offsetting logic was reached through trial and error */
-    lo = (s->dot_crawl_offset % 3); /* line offset to match color burst */
-    po = lo + 1;
-    if (lo == 1) {
-        lo = 3;
-    }
-    phase = po * 3;
- 
+#if NES_BORDER
     for (n = CRT_TOP; n <= (CRT_BOT + 2); n++) {
         int t; /* time */
         signed char *line = &v->analog[n * CRT_HRES];
         
         t = LINE_BEG;
  
-        phase += LAV_BEG * 3;
+        phase = phasetab[(n + s->dot_crawl_offset) % CRT_CC_VPER] + 6;
         t = LAV_BEG;
         while (t < CRT_HRES) {
             int ire, p;
@@ -185,22 +189,15 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
             ire += square_sample(p, phase + 1);
             ire += square_sample(p, phase + 2);
             ire += square_sample(p, phase + 3);
+			/* note from persune: highly optimized for realtime use in Mesen*/
             line[t++] = ire >> 2;
             phase += 3;
         }
-    
-        phase %= 12;
-    
     }
- 
-    phase = 6;
-    /* precalculate to save some CPU */
-    for (x = 0; x < 4; x++) {
-        burst_level[x] = (BLANK_LEVEL + (ccburst[x] * BURST_LEVEL)) >> 5;
-    }
-    for (y = (lo - 3); y < desth; y++) {
+#endif
+    for (y = 0; y < desth; y++) {
         signed char *line;  
-        int t;
+        int t, cb;
         int sy = (y * s->h) / desth;
         
         if (sy >= s->h) sy = s->h;
@@ -211,33 +208,30 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
         
         /* CB_CYCLES of color burst at 3.579545 Mhz */
         for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); t++) {
-            line[t] = burst_level[(t + po + n) & 3];
-            iccf[(t + n) & 3] = line[t];
+            cb = ccburst[n % CRT_CC_VPER][t % CRT_CC_SAMPLES];
+            line[t] = (BLANK_LEVEL + (cb * BURST_LEVEL)) >> 5;
+            iccf[n % CRT_CC_VPER][t % CRT_CC_SAMPLES] = line[t];
         }
         sy *= s->w;
-        phase += (xo * 3);
+        phase = phasetab[(y + yo + s->dot_crawl_offset) % CRT_CC_VPER];
         for (x = 0; x < destw; x++) {
-            if (y >= 0) {
-                int ire, p;
-                
-                p = s->data[((x * s->w) / destw) + sy];
-                ire = BLACK_LEVEL + v->black_point;
-                ire += square_sample(p, phase + 0);
-                ire += square_sample(p, phase + 1);
-                ire += square_sample(p, phase + 2);
-                ire += square_sample(p, phase + 3);
-                v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire >> 2;
-            }
+            int ire, p;
+            
+            p = s->data[((x * s->w) / destw) + sy];
+            ire = BLACK_LEVEL + v->black_point;
+            ire += square_sample(p, phase + 0);
+            ire += square_sample(p, phase + 1);
+            ire += square_sample(p, phase + 2);
+            ire += square_sample(p, phase + 3);
+			/* note from persune: highly optimized for realtime use in Mesen*/
+            v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire >> 2;
             phase += 3;
         }
-        /* mod here so we don't overflow down the line */
-        phase = (phase + ((CRT_HRES - destw) * 3)) % 12;
     }
     
-    for (x = 0; x < 4; x++) {
-        for (n = 0; n < 4; n++) {
-            /* don't know why, but it works */
-            v->ccf[n][x] = iccf[(x + n + 1) & 3] << 7;
+    for (n = 0; n < CRT_CC_VPER; n++) {
+        for (x = 0; x < CRT_CC_SAMPLES; x++) {
+            v->ccf[n][x] = iccf[n][x] << 7;
         }
     }
 }
@@ -250,30 +244,26 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
     int destw = AV_LEN;
     int desth = CRT_LINES;
     int n, phase;
-    int po, lo;
-    int iccf[4];
-    int ccburst[4]; /* color phase for burst */
+    int iccf[CRT_CC_VPER][CRT_CC_SAMPLES];
+    int ccburst[CRT_CC_VPER][CRT_CC_SAMPLES]; /* color phase for burst */
     int sn, cs;
-    
-    for (x = 0; x < 4; x++) {
-        n = s->hue + x * 90;
-        crt_sincos14(&sn, &cs, (n + 33) * 8192 / 180);
-        ccburst[x] = sn >> 10;
+    static int phasetab[CRT_CC_VPER] = { 0, 4, 8 };
+
+    for (y = 0; y < CRT_CC_VPER; y++) {
+        xo = (y + s->dot_crawl_offset) * (360 / CRT_CC_VPER);
+        for (x = 0; x < CRT_CC_SAMPLES; x++) {
+            n = (s->hue + x * (360 / CRT_CC_SAMPLES) + xo + 33) % 360;
+            crt_sincos14(&sn, &cs, n * 8192 / 180);
+            ccburst[y][x] = sn >> 10;
+        }
     }
-    xo = AV_BEG;
-    yo = CRT_TOP;
-         
+
+    xo = AV_BEG  + s->xoffset;
+    yo = CRT_TOP + s->yoffset;
+     
     /* align signal */
     xo = (xo & ~3);
     
-    /* this mess of offsetting logic was reached through trial and error */
-    lo = (s->dot_crawl_offset % 3); /* line offset to match color burst */
-    po = lo + 1;
-    if (lo == 1) {
-        lo = 3;
-    }
-    phase = 3 + po * 3;
-
     for (n = 0; n < CRT_VRES; n++) {
         int t; /* time */
         signed char *line = &v->analog[n * CRT_HRES];
@@ -293,13 +283,14 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
             while (t < CB_BEG) line[t++] = BLANK_LEVEL; /* BW + CB + BP */
             /* CB_CYCLES of color burst at 3.579545 Mhz */
             for (t = CB_BEG; t < CB_BEG + (CB_CYCLES * CRT_CB_FREQ); t++) {
-                cb = ccburst[(t + po + n) & 3];
+                cb = ccburst[n % CRT_CC_VPER][t % CRT_CC_SAMPLES];
                 line[t] = (BLANK_LEVEL + (cb * BURST_LEVEL)) >> 5;
-                iccf[(t + n) & 3] = line[t];
+                iccf[n % CRT_CC_VPER][t % CRT_CC_SAMPLES] = line[t];
             }
             while (t < LAV_BEG) line[t++] = BLANK_LEVEL;
-            phase += t * 3;
+#if NES_BORDER
             if (n >= CRT_TOP && n <= (CRT_BOT + 2)) {
+                phase = phasetab[(n + s->dot_crawl_offset) % CRT_CC_VPER] + 6;
                 while (t < CRT_HRES) {
                     int ire, p;
                     p = s->border_color;
@@ -309,52 +300,47 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
                     ire += square_sample(p, phase + 1);
                     ire += square_sample(p, phase + 2);
                     ire += square_sample(p, phase + 3);
-                    ire = (ire * (WHITE_LEVEL * v->white_point / 100)) >> 12;
-                    line[t++] = ire;
+			        /* note from persune: highly optimized for realtime use in Mesen*/
+                    line[t++] = ire >> 2;
                     phase += 3;
                 }
             } else {
+#endif
                 while (t < CRT_HRES) line[t++] = BLANK_LEVEL;
-                phase += (CRT_HRES - LAV_BEG) * 3;
+#if NES_BORDER
             }
-            phase %= 12;
+#endif
         }
     }
 
-    phase = 6;
-
-    for (y = (lo - 3); y < desth; y++) {
+    for (y = 0; y < desth; y++) {
         int sy = (y * s->h) / desth;
         if (sy >= s->h) sy = s->h;
         if (sy < 0) sy = 0;
         
         sy *= s->w;
-        phase += (xo * 3);
+        phase = phasetab[(y + yo + s->dot_crawl_offset) % CRT_CC_VPER];
         for (x = 0; x < destw; x++) {
-            if (y >= 0) {
-                int ire, p;
-                
-                p = s->data[((x * s->w) / destw) + sy];
-                ire = BLACK_LEVEL + v->black_point;
-                ire += square_sample(p, phase + 0);
-                ire += square_sample(p, phase + 1);
-                ire += square_sample(p, phase + 2);
-                ire += square_sample(p, phase + 3);
-                ire = (ire * (WHITE_LEVEL * v->white_point / 100)) >> 12;
-                v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
-            }
+            int ire, p;
+            
+            p = s->data[((x * s->w) / destw) + sy];
+            ire = BLACK_LEVEL + v->black_point;
+            ire += square_sample(p, phase + 0);
+            ire += square_sample(p, phase + 1);
+            ire += square_sample(p, phase + 2);
+            ire += square_sample(p, phase + 3);
+			/* note from persune: highly optimized for realtime use in Mesen*/
+            v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire >> 2;
             phase += 3;
         }
-        /* mod here so we don't overflow down the line */
-        phase = (phase + ((CRT_HRES - destw) * 3)) % 12;
     }
     
-    for (x = 0; x < 4; x++) {
-        for (n = 0; n < 4; n++) {
-            /* don't know why, but it works */
-            v->ccf[n][x] = iccf[(x + n + 1) & 3] << 7;
+    for (n = 0; n < CRT_CC_VPER; n++) {
+        for (x = 0; x < CRT_CC_SAMPLES; x++) {
+            v->ccf[n][x] = iccf[n][x] << 7;
         }
     }
 }
 #endif
+
 #endif

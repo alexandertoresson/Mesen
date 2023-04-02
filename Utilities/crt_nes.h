@@ -52,6 +52,20 @@ extern "C" {
 #define CRT_BOT         255    /* final line with active video */
 #define CRT_LINES       (CRT_BOT - CRT_TOP) /* number of active video lines */
 
+#define CRT_CC_SAMPLES  4 /* samples per chroma period (samples per 360 deg) */
+#define CRT_CC_VPER     3 /* vertical period in which the artifacts repeat */
+
+/* search windows, in samples */
+#define CRT_HSYNC_WINDOW 6
+#define CRT_VSYNC_WINDOW 6
+
+/* accumulated signal threshold required for sync detection.
+ * Larger = more stable, until it's so large that it is never reached in which
+ *          case the CRT won't be able to sync
+ */
+#define CRT_HSYNC_THRESH 4
+#define CRT_VSYNC_THRESH 94
+
 /* NES composite signal is measured in terms of PPU pixels, or cycles
  * https://www.nesdev.org/wiki/NTSC_video#Scanline_Timing
  *
@@ -110,7 +124,7 @@ extern "C" {
 
 /* IRE units (100 = 1.0V, -40 = 0.0V) */
 /* https://www.nesdev.org/wiki/NTSC_video#Terminated_measurement */
-#define WHITE_LEVEL      100
+#define WHITE_LEVEL      110
 #define BURST_LEVEL      30
 #define BLACK_LEVEL      0
 #define BLANK_LEVEL      0
@@ -123,12 +137,11 @@ struct NTSC_SETTINGS {
     int dot_crawl_offset; /* 0, 1, or 2 */
     /* NOTE: NES mode is always progressive */
     int hue;              /* 0-359 */
+    int xoffset;    /* x offset in sample space. 0 is minimum value */
+    int yoffset;    /* y offset in # of lines. 0 is minimum value */
+    /* make sure your NTSC_SETTINGS struct is zeroed out before you do anything */
+    int field_initialized; /* internal state */
 };
-
-/* Setup analog NTSC blanking and sync signal
- *   s - struct containing settings to apply to this field
- */
-extern void setup_field(struct CRT* v);
 
 #ifdef __cplusplus
 }
