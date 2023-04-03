@@ -23,6 +23,8 @@ private:
 
 	int _resDivider = 1;
 	uint16_t *_ppuOutputBuffer = nullptr;
+
+	int _brightness = 0;
 	
 	/* Ywidth, Iwidth and Qwidth are the filter widths for Y,I,Q respectively.
 	* All widths at 12 produce the best signal quality.

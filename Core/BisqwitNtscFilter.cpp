@@ -105,8 +105,14 @@ void BisqwitNtscFilter::OnBeforeApplyFilter()
 	int saturation = (int)((pictureSettings.Saturation + 1.0) * (pictureSettings.Saturation + 1.0) * 144044);
 	bool colorimetryCorrection = _console->GetSettings()->GetNtscFilterSettings().ColorimetryCorrection;
 
-	// [saturation at 0] * 100 / [I or Q width at 0]
-	double SatFactor = 144044 * 100 / 12;
+	_brightness = static_cast<int>(pictureSettings.Brightness * 750);
+
+	// for some reason the original coefficients
+	// of bisqwit's decoding matrix has been reduced by at least 10^-6
+	// the aim here is to more closely match Bisqwit's palette generator
+	// at hue 0, saturation 1.0, contrast 1.0, brightness 1.0, gamma 1.8
+	// https://bisqwit.iki.fi/utils/nespalette.php
+	double SatFactor = 1000000;
 
 	for(int i = 0; i < 27; i++) {
 		_sinetable[i] = (int8_t)(8 * std::sin(i * 2 * pi / 12 + pictureSettings.Hue * pi));
@@ -118,14 +124,26 @@ void BisqwitNtscFilter::OnBeforeApplyFilter()
 
 	_y = contrast / _yWidth;
 
-	_ir = colorimetryCorrection ? (int)(contrast * 1.994681e-6 * saturation / _iWidth) : (int)(contrast * (0.95599 / SatFactor) * saturation / _iWidth);
-	_qr = colorimetryCorrection ? (int)(contrast * 9.915742e-7 * saturation / _qWidth) : (int)(contrast * (0.62082 / SatFactor) * saturation / _qWidth);
+	_ir = colorimetryCorrection ?
+		(int)(contrast * 1.994681e-6 * saturation / _iWidth) :
+		(int)(contrast * (0.95599 / SatFactor) * saturation / _iWidth);
+	_qr = colorimetryCorrection ?
+		(int)(contrast * 9.915742e-7 * saturation / _qWidth) :
+		(int)(contrast * (0.62082 / SatFactor) * saturation / _qWidth);
 
-	_ig = colorimetryCorrection ? (int)(contrast * 9.151351e-8 * saturation / _iWidth) : (int)(contrast * (-0.27201 / SatFactor) * saturation / _iWidth);
-	_qg = colorimetryCorrection ? (int)(contrast * -6.334805e-7 * saturation / _qWidth) : (int)(contrast * (-0.64720 / SatFactor) * saturation / _qWidth);
+	_ig = colorimetryCorrection ?
+		(int)(contrast * 9.151351e-8 * saturation / _iWidth) :
+		(int)(contrast * (-0.27201 / SatFactor) * saturation / _iWidth);
+	_qg = colorimetryCorrection ?
+		(int)(contrast * -6.334805e-7 * saturation / _qWidth) :
+		(int)(contrast * (-0.64720 / SatFactor) * saturation / _qWidth);
 
-	_ib = colorimetryCorrection ? (int)(contrast * -1.012984e-6 * saturation / _iWidth) : (int)(contrast * (-1.10674 / SatFactor) * saturation / _iWidth);
-	_qb = colorimetryCorrection ? (int)(contrast * 1.667217e-6 * saturation / _qWidth) : (int)(contrast * (1.70423 / SatFactor) * saturation / _qWidth);
+	_ib = colorimetryCorrection ?
+		(int)(contrast * -1.012984e-6 * saturation / _iWidth) :
+		(int)(contrast * (-1.10674 / SatFactor) * saturation / _iWidth);
+	_qb = colorimetryCorrection ?
+		(int)(contrast * 1.667217e-6 * saturation / _qWidth) :
+		(int)(contrast * (1.70423 / SatFactor) * saturation / _qWidth);
 }
 
 void BisqwitNtscFilter::RecursiveBlend(int iterationCount, uint64_t *output, uint64_t *currentLine, uint64_t *nextLine, int pixelsPerCycle, bool verticalBlend)
@@ -302,8 +320,7 @@ void BisqwitNtscFilter::NtscDecodeLine(int width, const int8_t* signal, uint32_t
 	auto Cos = [=](int pos) -> char { return _sinetable[(pos + 36) % 12 + phase0]; };
 	auto Sin = [=](int pos) -> char { return _sinetable[(pos + 36) % 12 + 3 + phase0]; };
 
-	int brightness = (int)(_console->GetSettings()->GetPictureSettings().Brightness * 750);
-	int ysum = brightness, isum = 0, qsum = 0;
+	int ysum = _brightness, isum = 0, qsum = 0;
 	int offset = _resDivider + 4;
 	int leftOverscan = (GetOverscan().Left + _paddingSize) * 8 + offset;
 	int rightOverscan = width - (GetOverscan().Right + _paddingSize) * 8 + offset;
