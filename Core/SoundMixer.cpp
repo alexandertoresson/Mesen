@@ -255,7 +255,7 @@ double SoundMixer::GetChannelOutput(AudioChannel channel, bool forRightChannel)
 int16_t SoundMixer::GetOutputVolume(bool forRightChannel)
 {
 	double squareOutput = GetChannelOutput(AudioChannel::Square1, forRightChannel) + GetChannelOutput(AudioChannel::Square2, forRightChannel);
-	double tndOutput = 3 * GetChannelOutput(AudioChannel::Triangle, forRightChannel) + 2 * GetChannelOutput(AudioChannel::Noise, forRightChannel) + GetChannelOutput(AudioChannel::DMC, forRightChannel);
+	double tndOutput = 2.7516713261 * GetChannelOutput(AudioChannel::Triangle, forRightChannel) + 1.8493587125 * GetChannelOutput(AudioChannel::Noise, forRightChannel) + 1.0966713261 * GetChannelOutput(AudioChannel::DMC, forRightChannel);
 
 	uint16_t squareVolume = (uint16_t)(477600 / (8128.0 / squareOutput + 100.0));
 	uint16_t tndVolume = (uint16_t)(818350 / (24329.0 / tndOutput + 100.0));
@@ -265,7 +265,7 @@ int16_t SoundMixer::GetOutputVolume(bool forRightChannel)
 		GetChannelOutput(AudioChannel::MMC5, forRightChannel) * 43 +
 		GetChannelOutput(AudioChannel::Namco163, forRightChannel) * 20 +
 		GetChannelOutput(AudioChannel::Sunsoft5B, forRightChannel) * 15 +
-		GetChannelOutput(AudioChannel::VRC6, forRightChannel) * 75 +
+		GetChannelOutput(AudioChannel::VRC6, forRightChannel) * 48 +
 #ifndef VRC7_USE_OLD_EMU
 #define VRC7_USE_NUKED
 #endif
