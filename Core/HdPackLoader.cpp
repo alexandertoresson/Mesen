@@ -13,6 +13,15 @@
 
 #define checkConstraint(x, y) if(!(x)) { MessageManager::Log(y); return; }
 
+static const char windowsSlash = '\\';
+static const char unixSlash    = '/';
+#if defined(_WIN32)
+#define convertPathToNative(filepath) std::replace(filepath.begin(), filepath.end(), unixSlash, windowsSlash)
+#else
+#define convertPathToNative(filepath) std::replace(filepath.begin(), filepath.end(), windowsSlash, unixSlash)
+#endif
+#define convertPathToNativeVector(vector, idx) if (vector.size() > idx) { convertPathToNative(vector[idx]); }
+
 HdPackLoader::HdPackLoader()
 {
 }
@@ -100,7 +109,7 @@ bool HdPackLoader::CheckFile(string filename)
 bool HdPackLoader::LoadFile(string filename, vector<uint8_t> &fileData)
 {
 	fileData.clear();
-
+	MessageManager::DisplayMessage("Pack Loader", "Loading " + filename);
 	if(_loadFromZip) {
 		if(_reader.ExtractFile(filename, fileData)) {
 			return true;
@@ -125,6 +134,8 @@ bool HdPackLoader::LoadFile(string filename, vector<uint8_t> &fileData)
 bool HdPackLoader::LoadPack()
 {
 	string currentLine;
+	uint32_t lineCnt;
+
 	try {
 		vector<uint8_t> hdDefinition;
 		if(!LoadFile("hires.txt", hdDefinition)) {
@@ -133,7 +144,13 @@ bool HdPackLoader::LoadPack()
 
 		InitializeGlobalConditions();
 
+		MessageManager::DisplayMessage("Pack Loader", "Processing hires.txt");
+		lineCnt = 1;
 		for(string lineContent : StringUtilities::Split(string(hdDefinition.data(), hdDefinition.data() + hdDefinition.size()), '\n')) {
+			if (lineCnt % 1000 == 0) {
+				MessageManager::DisplayMessage("Pack Loader", std::to_string(lineCnt) + " lines processed");
+			}
+			lineCnt++;
 			if(lineContent.empty()) {
 				continue;
 			}
@@ -165,14 +182,17 @@ bool HdPackLoader::LoadPack()
 				ProcessOverscanTag(tokens);
 			} else if(lineContent.substr(0, 5) == "<img>") {
 				lineContent = lineContent.substr(5);
+				convertPathToNative(lineContent);
 				if(!ProcessImgTag(lineContent)) {
 					return false;
 				}
 			} else if(lineContent.substr(0, 7) == "<patch>") {
 				tokens = StringUtilities::Split(lineContent.substr(7), ',');
+				convertPathToNativeVector(tokens, 0);
 				ProcessPatchTag(tokens);
 			} else if(lineContent.substr(0, 12) == "<background>") {
 				tokens = StringUtilities::Split(lineContent.substr(12), ',');
+				convertPathToNativeVector(tokens, 0);
 				ProcessBackgroundTag(tokens, conditions);
 			} else if(lineContent.substr(0, 11) == "<condition>") {
 				tokens = StringUtilities::Split(lineContent.substr(11), ',');
@@ -186,15 +206,23 @@ bool HdPackLoader::LoadPack()
 				ProcessOptionTag(tokens);
 			} else if(lineContent.substr(0, 5) == "<bgm>") {
 				tokens = StringUtilities::Split(lineContent.substr(5), ',');
+				convertPathToNativeVector(tokens, 2);
 				ProcessBgmTag(tokens);
 			} else if(lineContent.substr(0, 5) == "<sfx>") {
 				tokens = StringUtilities::Split(lineContent.substr(5), ',');
+				convertPathToNativeVector(tokens, 2);
 				ProcessSfxTag(tokens);
+			} else if (lineContent.substr(0, 10) == "<addition>") {
+				tokens = StringUtilities::Split(lineContent.substr(10), ',');
+				convertPathToNativeVector(tokens, 2);
+				ProcessAdditionTag(tokens);
 			}
 		}
+		MessageManager::DisplayMessage("Pack Loader", std::to_string(lineCnt) + " lines processed in total");
 
 		LoadCustomPalette();
 		InitializeHdPack();
+		MessageManager::DisplayMessage("Pack Loader", "Completed");
 
 		return true;
 	} catch(std::exception &ex) {
@@ -259,6 +287,38 @@ void HdPackLoader::InitializeGlobalConditions()
 	HdPackCondition* invBgpriority = new HdPackBgPriorityCondition();
 	invBgpriority->Name = "!bgpriority";
 	_data->Conditions.push_back(unique_ptr<HdPackCondition>(invBgpriority));
+
+	HdPackCondition* sppalette0 = new HdPackSpPalette0Condition();
+	sppalette0->Name = "sppalette0";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(sppalette0));
+
+	HdPackCondition* invSppalette0 = new HdPackSpPalette0Condition();
+	invSppalette0->Name = "!sppalette0";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(invSppalette0));
+
+	HdPackCondition* sppalette1 = new HdPackSpPalette1Condition();
+	sppalette1->Name = "sppalette1";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(sppalette1));
+
+	HdPackCondition* invSppalette1 = new HdPackSpPalette1Condition();
+	invSppalette1->Name = "!sppalette1";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(invSppalette1));
+
+	HdPackCondition* sppalette2 = new HdPackSpPalette2Condition();
+	sppalette2->Name = "sppalette2";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(sppalette2));
+
+	HdPackCondition* invSppalette2 = new HdPackSpPalette2Condition();
+	invSppalette2->Name = "!sppalette2";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(invSppalette2));
+
+	HdPackCondition* sppalette3 = new HdPackSpPalette3Condition();
+	sppalette3->Name = "sppalette3";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(sppalette3));
+
+	HdPackCondition* invSppalette3 = new HdPackSpPalette3Condition();
+	invSppalette3->Name = "!sppalette3";
+	_data->Conditions.push_back(unique_ptr<HdPackCondition>(invSppalette3));
 }
 
 void HdPackLoader::ProcessOverscanTag(vector<string> &tokens)
@@ -402,9 +462,46 @@ void HdPackLoader::ProcessOptionTag(vector<string> &tokens)
 	}
 }
 
+void HdPackLoader::ProcessAdditionTag(vector<string>& tokens)
+{
+	HdPackAdditionInfo* additionInfo = new HdPackAdditionInfo();
+	size_t index = 0;
+	string tileData = tokens[index++];
+	if (tileData.size() >= 32) {
+		//CHR RAM tile, read the tile data
+		for (int i = 0; i < 16; i++) {
+			additionInfo->TileData[i] = HexUtilities::FromHex(tileData.substr(i * 2, 2));
+		}
+		additionInfo->IsChrRamTile = true;
+		additionInfo->TileIndex = -1;
+	}
+	else {
+		additionInfo->TileIndex = HexUtilities::FromHex(tileData);
+		additionInfo->IsChrRamTile = false;
+	}
+	additionInfo->PaletteColors = HexUtilities::FromHex(tokens[index++]);
+
+	additionInfo->OffsetX = std::stoi(tokens[index++]);
+	additionInfo->OffsetY = std::stoi(tokens[index++]);
+	
+	string addTileData = tokens[index++];
+	if (addTileData.size() >= 32) {
+		//CHR RAM tile, read the tile data
+		for (int i = 0; i < 16; i++) {
+			additionInfo->additionSpr.TileData[i] = HexUtilities::FromHex(addTileData.substr(i * 2, 2));
+		}
+	}
+	else {
+		additionInfo->additionSpr.TileIndex = HexUtilities::FromHex(addTileData);
+	}
+	additionInfo->additionSpr.PaletteColors = HexUtilities::FromHex(tokens[index++]);
+
+	_data->Additions.push_back(unique_ptr<HdPackAdditionInfo>(additionInfo));
+}
+
 void HdPackLoader::ProcessConditionTag(vector<string> &tokens, bool createInvertedCondition)
 {
-	checkConstraint(tokens.size() >= 4, "[HDPack] Condition tag should contain at least 4 parameters");
+	checkConstraint(tokens.size() >= 3, "[HDPack] Condition tag should contain at least 3 parameters");
 	checkConstraint(tokens[0].size() > 0, "[HDPack] Condition name may not be empty");
 	checkConstraint(tokens[0].find_last_of('!') == string::npos, "[HDPack] Condition name may not contain '!' characters");
 
@@ -424,6 +521,12 @@ void HdPackLoader::ProcessConditionTag(vector<string> &tokens, bool createInvert
 		condition.reset(new HdPackMemoryCheckConstantCondition());
 	} else if(tokens[1] == "frameRange") {
 		condition.reset(new HdPackFrameRangeCondition());
+	} else if(tokens[1] == "spriteFrameRange") {
+		condition.reset(new HdPackSpriteFrameRangeCondition());
+	} else if(tokens[1] == "spriteFrameRange") {
+		condition.reset(new HdPackSpriteFrameRangeCondition());
+	} else if (tokens[1] == "randomBackground") {
+		condition.reset(new HdPackRandomBackgroundCondition());
 	} else {
 		MessageManager::Log("[HDPack] Invalid condition type: " + tokens[1]);
 		return;
@@ -529,6 +632,36 @@ void HdPackLoader::ProcessConditionTag(vector<string> &tokens, bool createInvert
 		checkConstraint(operandB >= 0 && operandB <= 0xFFFF, "[HDPack] Out of range frameRange operand");
 
 		((HdPackFrameRangeCondition*)condition.get())->Initialize(operandA, operandB);
+	}
+	else if (dynamic_cast<HdPackSpriteFrameRangeCondition*>(condition.get())) {
+		checkConstraint(_data->Version >= 101, "[HDPack] This feature requires version 101+ of HD Packs");
+		checkConstraint(tokens.size() >= 4, "[HDPack] Condition tag should contain at least 4 parameters");
+
+		int32_t operandA;
+		int32_t operandB;
+		if (_data->Version == 101) {
+			operandA = HexUtilities::FromHex(tokens[index++]);
+			operandB = HexUtilities::FromHex(tokens[index++]);
+		}
+		else {
+			//Version 102+
+			operandA = std::stoi(tokens[index++]);
+			operandB = std::stoi(tokens[index++]);
+		}
+
+		checkConstraint(operandA >= 0 && operandA <= 0xFFFF, "[HDPack] Out of range spriteFrameRange operand");
+		checkConstraint(operandB >= 0 && operandB <= 0xFFFF, "[HDPack] Out of range spriteFrameRange operand");
+
+		((HdPackSpriteFrameRangeCondition*)condition.get())->Initialize(operandA, operandB);
+	}
+	else if (dynamic_cast<HdPackRandomBackgroundCondition*>(condition.get())) {
+		checkConstraint(_data->Version >= 106, "[HDPack] This feature requires version 106+ of HD Packs");
+		checkConstraint(tokens.size() >= 3, "[HDPack] Condition tag should contain at least 3 parameters");
+
+		float operandA;
+		operandA = std::stof(tokens[index++]);
+
+		((HdPackRandomBackgroundCondition*)condition.get())->Initialize(operandA);
 	}
 	
 	HdPackCondition *cond = condition.get();
@@ -651,9 +784,30 @@ void HdPackLoader::ProcessBgmTag(vector<string> &tokens)
 	if(trackId >= 0) {
 		if(_loadFromZip) {
 			VirtualFile file(_hdPackFolder, tokens[2]);
-			_data->BgmFilesById[trackId] = file;
+			_data->BgmFilesById[trackId].File = file;
 		} else {
-			_data->BgmFilesById[trackId] = FolderUtilities::CombinePath(_hdPackFolder, tokens[2]);
+			_data->BgmFilesById[trackId].File = FolderUtilities::CombinePath(_hdPackFolder, tokens[2]);
+		}
+		_data->BgmFilesById[trackId].LoopPoint = 0;
+		_data->BgmFilesById[trackId].PlaybackOptions = -1;
+		_data->BgmFilesById[trackId].Volume = -1;
+		if (tokens.size() >= 4) {
+			stringstream pt(tokens[3]);
+			uint32_t loopPoint;
+			pt >> loopPoint;
+			_data->BgmFilesById[trackId].LoopPoint = loopPoint;
+			if (tokens.size() >= 5) {
+				stringstream pt(tokens[4]);
+				int16_t pbo;
+				pt >> pbo;
+				_data->BgmFilesById[trackId].PlaybackOptions = pbo;
+				if (tokens.size() >= 6) {
+					stringstream pt(tokens[5]);
+					int16_t vol;
+					pt >> vol;
+					_data->BgmFilesById[trackId].Volume = vol;
+				}
+			}
 		}
 	}
 }

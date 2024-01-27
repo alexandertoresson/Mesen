@@ -465,6 +465,7 @@ bool Console::Initialize(VirtualFile &romFile, VirtualFile &patchFile, bool forP
 
 void Console::ProcessCpuClock()
 {
+	_mapper->ProcessEPSMClock();
 	_mapper->ProcessCpuClock();
 	_apu->ProcessCpuClock();
 }
@@ -565,6 +566,11 @@ RomInfo Console::GetRomInfo()
 uint32_t Console::GetFrameCount()
 {
 	return _ppu ? _ppu->GetFrameCount() : 0;
+}
+
+uint8_t Console::GetStartingPhase()
+{
+	return _ppu ? _ppu->GetStartingPhase() : 0;
 }
 
 NesModel Console::GetModel()
@@ -1243,7 +1249,7 @@ void Console::LoadHdPack(VirtualFile &romFile, VirtualFile &patchFile)
 	}
 }
 
-void Console::StartRecordingHdPack(string saveFolder, ScaleFilterType filterType, uint32_t scale, uint32_t flags, uint32_t chrRamBankSize)
+void Console::StartRecordingHdPack(string saveFolder, ScaleFilterType filterType, uint32_t scale, uint32_t flags, uint32_t chrRamBankSize, uint32_t outTileType)
 {
 	ConsolePauseHelper helper(this);
 
@@ -1251,7 +1257,7 @@ void Console::StartRecordingHdPack(string saveFolder, ScaleFilterType filterType
 	SaveState(saveState);
 	
 	_hdPackBuilder.reset();
-	_hdPackBuilder.reset(new HdPackBuilder(shared_from_this(), saveFolder, filterType, scale, flags, chrRamBankSize, !_mapper->HasChrRom()));
+	_hdPackBuilder.reset(new HdPackBuilder(shared_from_this(), saveFolder, filterType, scale, flags, chrRamBankSize, outTileType, !_mapper->HasChrRom()));
 
 	_memoryManager->UnregisterIODevice(_ppu.get());
 	_ppu.reset();

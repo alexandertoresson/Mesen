@@ -20,9 +20,11 @@ namespace Mesen.GUI.Debugger
 		private int _maxPrgRomAddress = 0;
 		private int _maxWorkRamAddress = 0;
 		private int _maxSaveRamAddress = 0;
+		private bool focusComment = false;
 
-		public frmEditLabel(CodeLabel label, CodeLabel originalLabel = null)
+		public frmEditLabel(CodeLabel label, CodeLabel originalLabel = null, bool focusComment = false)
 		{
+			this.focusComment = focusComment;
 			InitializeComponent();
 
 			_originalLabel = originalLabel;
@@ -44,7 +46,14 @@ namespace Mesen.GUI.Debugger
 		{
 			base.OnShown(e);
 			UpdateByteLabel();
-			txtLabel.Focus();
+			if (!focusComment)
+			{
+				txtLabel.Focus();
+			}
+			else
+			{
+				txtComment.Focus();
+			}
 		}
 
 		private int GetMaxAddress(AddressType type)

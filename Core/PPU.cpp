@@ -105,6 +105,8 @@ void PPU::Reset()
 	memset(_oamDecayCycles, 0, sizeof(_oamDecayCycles));
 	_enableOamDecay = _settings->CheckFlag(EmulationFlags::EnableOamDecay);
 
+	_startingPhase = 0;
+
 	UpdateMinimumDrawCycles();
 }
 
@@ -112,30 +114,37 @@ void PPU::SetNesModel(NesModel model)
 {
 	_nesModel = model;
 
+	// https://www.nesdev.org/wiki/Cycle_reference_chart
 	switch(_nesModel) {
 		case NesModel::Auto:
 			//Should never be Auto
 			break;
 
 		case NesModel::NTSC:
-			_nmiScanline = 241;
-			_vblankEnd = 260;
-			_standardNmiScanline = 241;
-			_standardVblankEnd = 260;
+			// picture height + postrender blanking lines
+			_nmiScanline = 240 + 1;
+			// picture height + (postrender blanking lines - 1) + vblank length
+			_vblankEnd = 240 + 20;
+			_standardNmiScanline = _nmiScanline;
+			_standardVblankEnd = _vblankEnd;
 			_masterClockDivider = 4;
 			break;
 		case NesModel::PAL:
-			_nmiScanline = 241;
-			_vblankEnd = 310;
-			_standardNmiScanline = 241;
-			_standardVblankEnd = 310;
+			// (picture height + border line) + postrender blanking lines
+			_nmiScanline = 240 + 1;
+			// (picture height + border line) + (postrender blanking lines - 1) + vblank length + 50
+			_vblankEnd = 240 + 20 + 50;
+			_standardNmiScanline = _nmiScanline;
+			_standardVblankEnd = _vblankEnd;
 			_masterClockDivider = 5;
 			break;
 		case NesModel::Dendy:
-			_nmiScanline = 291;
-			_vblankEnd = 310;
-			_standardNmiScanline = 291;
-			_standardVblankEnd = 310;
+			// (picture height + border line) + postrender blanking lines + 50
+			_nmiScanline = 240 + 1 + 50;
+			// (picture height + border line) + (postrender blanking lines - 1) + 50 + vblank length
+			_vblankEnd = 240 + 50 + 20;
+			_standardNmiScanline = _nmiScanline;
+			_standardVblankEnd = _vblankEnd;
 			_masterClockDivider = 5;
 			break;
 	}
@@ -337,6 +346,7 @@ uint8_t PPU::ReadRAM(uint16_t addr)
 						uint8_t step = ((_cycle - 257) % 8) > 3 ? 3 : ((_cycle - 257) % 8);
 						_secondaryOAMAddr = (_cycle - 257) / 8 * 4 + step;
 						_oamCopybuffer = _secondarySpriteRAM[_secondaryOAMAddr];
+						_oamID = _secondarySpriteRAMLink[_secondaryOAMAddr >> 2];
 					}
 					//Return the value that PPU is currently using for sprite evaluation/rendering
 					returnValue = _oamCopybuffer;
@@ -665,10 +675,12 @@ void PPU::LoadTileInfo()
 
 				_state.LowBitShift |= _nextTile.LowByte;
 				_state.HighBitShift |= _nextTile.HighByte;
+				_state.bgTileAddr = _nextTile.bgTileAddr;
 
 				uint8_t tileIndex = ReadVram(GetNameTableAddr());
 				_nextTile.TileAddr = (tileIndex << 4) | (_state.VideoRamAddr >> 12) | _flags.BackgroundPatternAddr;
 				_nextTile.OffsetY = _state.VideoRamAddr >> 12;
+				_nextTile.bgTileAddr = _state.VideoRamAddr & 0x0FFF;
 				break;
 			}
 
@@ -690,7 +702,7 @@ void PPU::LoadTileInfo()
 	}
 }
 
-void PPU::LoadSprite(uint8_t spriteY, uint8_t tileIndex, uint8_t attributes, uint8_t spriteX, bool extraSprite)
+void PPU::LoadSprite(uint8_t spriteY, uint8_t tileIndex, uint8_t attributes, uint8_t spriteX, bool extraSprite, uint8_t oamID)
 {
 	bool backgroundPriority = (attributes & 0x20) == 0x20;
 	bool horizontalMirror = (attributes & 0x40) == 0x40;
@@ -730,6 +742,7 @@ void PPU::LoadSprite(uint8_t spriteY, uint8_t tileIndex, uint8_t attributes, uin
 		info.AbsoluteTileAddr = _console->GetMapper()->ToAbsoluteChrAddress(tileAddr);
 		info.OffsetY = lineOffset;
 		info.SpriteX = spriteX;
+		info.OAMIndex = oamID;		
 
 		if(_scanline >= 0) {
 			//Sprites read on prerender scanline are not shown on scanline 0
@@ -788,7 +801,7 @@ void PPU::LoadExtraSprites()
 			for(uint32_t i = (_lastVisibleSpriteAddr + 4) & 0xFF; i != _firstVisibleSpriteAddr; i = (i + 4) & 0xFF) {
 				uint8_t spriteY = _spriteRAM[i];
 				if(_scanline >= spriteY && _scanline < spriteY + (_flags.LargeSprites ? 16 : 8)) {
-					LoadSprite(spriteY, _spriteRAM[i + 1], _spriteRAM[i + 2], _spriteRAM[i + 3], true);
+					LoadSprite(spriteY, _spriteRAM[i + 1], _spriteRAM[i + 2], _spriteRAM[i + 3], true, i >> 2);
 					_spriteCount++;
 				}
 			}
@@ -799,7 +812,7 @@ void PPU::LoadExtraSprites()
 void PPU::LoadSpriteTileInfo()
 {
 	uint8_t *spriteAddr = _secondarySpriteRAM + _spriteIndex * 4;
-	LoadSprite(*spriteAddr, *(spriteAddr+1), *(spriteAddr+2), *(spriteAddr+3), false);
+	LoadSprite(*spriteAddr, *(spriteAddr+1), *(spriteAddr+2), *(spriteAddr+3), false, _secondarySpriteRAMLink[_spriteIndex]);
 }
 
 void PPU::ShiftTileRegisters()
@@ -995,10 +1008,9 @@ void PPU::ProcessScanline()
 			LoadTileInfo();
 		}
 	} else if(_cycle == 337 || _cycle == 339) {
-		if(IsRenderingEnabled()) {
+		if (IsRenderingEnabled()) {
 			ReadVram(GetNameTableAddr());
-
-			if(_scanline == -1 && _cycle == 339 && (_frameCount & 0x01) && _nesModel == NesModel::NTSC && _settings->GetPpuModel() == PpuModel::Ppu2C02) {
+			if (_scanline == -1 && _cycle == 339 && (_frameCount & 0x01) && _nesModel == NesModel::NTSC && _settings->GetPpuModel() == PpuModel::Ppu2C02) {
 				//This behavior is NTSC-specific - PAL frames are always the same number of cycles
 				//"With rendering enabled, each odd PPU frame is one PPU clock shorter than normal" (skip from 339 to 0, going over 340)
 				_cycle = 340;
@@ -1036,12 +1048,14 @@ void PPU::ProcessSpriteEvaluation()
 			if(_cycle & 0x01) {
 				//Read a byte from the primary OAM on odd cycles
 				_oamCopybuffer = ReadSpriteRam(_state.SpriteRamAddr);
+				_oamID = _state.SpriteRamAddr >> 2;
 			} else {
 				if(_oamCopyDone) {
 					_spriteAddrH = (_spriteAddrH + 1) & 0x3F;
 					if(_secondaryOAMAddr >= 0x20) {
 						//"As seen above, a side effect of the OAM write disable signal is to turn writes to the secondary OAM into reads from it."
 						_oamCopybuffer = _secondarySpriteRAM[_secondaryOAMAddr & 0x1F];
+						_oamID = _secondarySpriteRAMLink[(_secondaryOAMAddr >> 2) & 0x08];
 					}
 				} else {
 					if(!_spriteInRange && _scanline >= _oamCopybuffer && _scanline < _oamCopybuffer + (_flags.LargeSprites ? 16 : 8)) {
@@ -1051,7 +1065,7 @@ void PPU::ProcessSpriteEvaluation()
 					if(_secondaryOAMAddr < 0x20) {
 						//Copy 1 byte to secondary OAM
 						_secondarySpriteRAM[_secondaryOAMAddr] = _oamCopybuffer;
-
+						_secondarySpriteRAMLink[_secondaryOAMAddr >> 2] =_oamID;
 						if(_spriteInRange) {
 							_spriteAddrL++;
 							_secondaryOAMAddr++;
@@ -1083,6 +1097,7 @@ void PPU::ProcessSpriteEvaluation()
 					} else {
 						//"As seen above, a side effect of the OAM write disable signal is to turn writes to the secondary OAM into reads from it."
 						_oamCopybuffer = _secondarySpriteRAM[_secondaryOAMAddr & 0x1F];
+						_oamID = _secondarySpriteRAMLink[(_secondaryOAMAddr >> 2) & 0x08];
 
 						//8 sprites have been found, check next sprite for overflow + emulate PPU bug
 						if(_spriteInRange) {
@@ -1340,6 +1355,8 @@ void PPU::Exec()
 	if(_needStateUpdate) {
 		UpdateState();
 	}
+
+	_startingPhase = _cycle % 3;
 }
 
 void PPU::UpdateState()

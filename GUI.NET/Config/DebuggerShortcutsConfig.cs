@@ -161,6 +161,8 @@ namespace Mesen.GUI.Config
 		public XmlKeys CodeWindow_EditSourceFile = Keys.F4;
 		[ShortcutName("Code Window: Edit Label")]
 		public XmlKeys CodeWindow_EditLabel = Keys.F2;
+		[ShortcutName("Code Window: Edit Code Comment")]
+		public XmlKeys CodeWindow_EditCodeComment = Keys.OemSemicolon;
 		[ShortcutName("Code Window: Navigate Back")]
 		public XmlKeys CodeWindow_NavigateBack = Keys.Alt | Keys.Left;
 		[ShortcutName("Code Window: Navigate Forward")]
@@ -257,7 +259,29 @@ namespace Mesen.GUI.Config
 				return "";
 			} else {
 				string keyString = new KeysConverter().ConvertToString(keys);
-				return keyString.Replace("+None", "").Replace("Oemcomma", ",").Replace("Oemplus", "+").Replace("Oemtilde", "Tilde").Replace("OemMinus", "-").Replace("Cancel", "Break").Replace("Escape", "Esc");
+				return keyString.Replace("+None", "")
+					.Replace("Cancel", "Break")
+					.Replace("Escape", "Esc")
+					.Replace("Oem1", ";")
+					.Replace("OemSemicolon", ";")
+					.Replace("OemPeriod", ".")
+					.Replace("Oemcomma", ",")
+					.Replace("Oemplus", "+")
+					.Replace("OemMinus", "-")
+					.Replace("Oem2", "/")
+					.Replace("OemQuestion", "/")
+					.Replace("Oem3", "Tilde")
+					.Replace("Oemtilde", "Tilde")
+					.Replace("Oem4", "[")
+					.Replace("OemOpenBrackets", "[")
+					.Replace("Oem5", "\\")
+					.Replace("OemPipe", "\\")
+					.Replace("Oem6", "]")
+					.Replace("OemCloseBrackets", "]")
+					.Replace("Oem7", "'")
+					.Replace("OemQuotes", "'")
+					.Replace("OemBackslash", "\\")
+					.Replace("Oem102", "\\");
 			}
 		}
 		

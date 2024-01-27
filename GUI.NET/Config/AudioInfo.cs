@@ -6,6 +6,7 @@ namespace Mesen.GUI.Config
 	{
 		public string AudioDevice = "";
 		public bool EnableAudio = true;
+		public bool EnableEPSM = true;
 
 		public bool DisableDynamicSampleRate = false;
 
@@ -23,6 +24,10 @@ namespace Mesen.GUI.Config
 		[MinMax(0, 100)] public UInt32 Vrc7Volume = 100;
 		[MinMax(0, 100)] public UInt32 Namco163Volume = 100;
 		[MinMax(0, 100)] public UInt32 Sunsoft5bVolume = 100;
+		[MinMax(0, 100)] public UInt32 EPSMVolume_L = 50;
+		[MinMax(0, 100)] public UInt32 EPSMVolume_R = 50;
+
+		[MinMax(10000, 32000000)] public UInt32 EPSMClockFrequency = 8000000;
 
 		[MinMax(-100, 100)] public Int32 Square1Panning = 0;
 		[MinMax(-100, 100)] public Int32 Square2Panning = 0;
@@ -35,6 +40,8 @@ namespace Mesen.GUI.Config
 		[MinMax(-100, 100)] public Int32 Vrc7Panning = 0;
 		[MinMax(-100, 100)] public Int32 Namco163Panning = 0;
 		[MinMax(-100, 100)] public Int32 Sunsoft5bPanning = 0;
+		[MinMax(-100, 100)] public Int32 EPSMPanning_L = -100;
+		[MinMax(-100, 100)] public Int32 EPSMPanning_R = 100;
 
 		[ValidValues(11025, 22050, 44100, 48000, 96000)] public UInt32 SampleRate = 48000;
 		public bool ReduceSoundInBackground = true;
@@ -87,7 +94,7 @@ namespace Mesen.GUI.Config
 		{
 		}
 
-		static private double ConvertVolume(UInt32 volume)
+		static public double ConvertVolume(UInt32 volume)
 		{
 			return ((double)volume / 100d);
 		}
@@ -114,6 +121,10 @@ namespace Mesen.GUI.Config
 			InteropEmu.SetChannelVolume(AudioChannel.VRC7, ConvertVolume(audioInfo.Vrc7Volume));
 			InteropEmu.SetChannelVolume(AudioChannel.Namco163, ConvertVolume(audioInfo.Namco163Volume));
 			InteropEmu.SetChannelVolume(AudioChannel.Sunsoft5B, ConvertVolume(audioInfo.Sunsoft5bVolume));
+			InteropEmu.SetChannelVolume(AudioChannel.EPSM_L, ConvertVolume(audioInfo.EPSMVolume_L));
+			InteropEmu.SetChannelVolume(AudioChannel.EPSM_R, ConvertVolume(audioInfo.EPSMVolume_R));
+			InteropEmu.SetChannelVolume(AudioChannel.EPSM_L, audioInfo.EnableEPSM ? AudioInfo.ConvertVolume(audioInfo.EPSMVolume_L) : 0);
+			InteropEmu.SetChannelVolume(AudioChannel.EPSM_R, audioInfo.EnableEPSM ? AudioInfo.ConvertVolume(audioInfo.EPSMVolume_R) : 0);
 
 			InteropEmu.SetChannelPanning(AudioChannel.Square1, ConvertPanning(audioInfo.Square1Panning));
 			InteropEmu.SetChannelPanning(AudioChannel.Square2, ConvertPanning(audioInfo.Square2Panning));
@@ -126,6 +137,10 @@ namespace Mesen.GUI.Config
 			InteropEmu.SetChannelPanning(AudioChannel.VRC7, ConvertPanning(audioInfo.Vrc7Panning));
 			InteropEmu.SetChannelPanning(AudioChannel.Namco163, ConvertPanning(audioInfo.Namco163Panning));
 			InteropEmu.SetChannelPanning(AudioChannel.Sunsoft5B, ConvertPanning(audioInfo.Sunsoft5bPanning));
+			InteropEmu.SetChannelPanning(AudioChannel.EPSM_L, ConvertPanning(audioInfo.EPSMPanning_L));
+			InteropEmu.SetChannelPanning(AudioChannel.EPSM_R, ConvertPanning(audioInfo.EPSMPanning_R));
+
+			InteropEmu.SetEPSMClockFrequency(audioInfo.EPSMClockFrequency);
 
 			InteropEmu.SetEqualizerFilterType(audioInfo.EnableEqualizer ? audioInfo.EqualizerFilterType : EqualizerFilterType.None);
 

@@ -691,7 +691,7 @@ namespace Mesen.GUI.Forms
 
 					this.StartEmuThread();
 					this.BeginInvoke((MethodInvoker)(() => {
-						if(DebugWindowManager.HasOpenedWindow) {
+						if(DebugWindowManager.HasOpenedWindow || _luaScriptsToLoad.Count > 0) {
 							DebugWorkspaceManager.GetWorkspace();
 							DebugWorkspaceManager.AutoLoadDbgFiles(true);
 						}

@@ -244,7 +244,8 @@
 			<Control ID="chkUseHdPacks">Fes servir els paquets d'alta resolució d'HDNes</Control>
 			<Control ID="chkUseExclusiveFullscreen">Fes servir el mode de pantalla completa exclusiva</Control>
 			<Control ID="lblFullscreenResolution">Fullscreen Resolution:</Control>
-			<Control ID="lblRequestedRefreshRate">Requested Refresh Rate:</Control>
+			<Control ID="lblRequestedRefreshRate">Requested Refresh Rate NTSC:</Control>
+			<Control ID="lblRequestedRefreshRate2">PAL / Dendy:</Control>
 			<Control ID="tpgOverscan">Sobreescaneig</Control>
 			<Control ID="tpgOverscanGlobal">Global</Control>
 			<Control ID="tpgOverscanGameSpecific">Game-Specific</Control>
@@ -1116,6 +1117,7 @@
 			<Value ID="Catalan">Català</Value>
 			<Value ID="Chinese">中文</Value>
 			<Value ID="Italian">Italiano</Value>
+			<Value ID="Polish">Polski</Value>
 		</Enum>
 		<Enum ID="VideoCodec">
 			<Value ID="None">Cap (vídeo sense compressió)</Value>

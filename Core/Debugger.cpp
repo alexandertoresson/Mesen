@@ -767,6 +767,7 @@ bool Debugger::ProcessRamOperation(MemoryOperationType type, uint16_t &addr, uin
 	AddressTypeInfo addressInfo;
 	GetAbsoluteAddressAndType(addr, &addressInfo);
 	int32_t absoluteAddr = addressInfo.Type == AddressType::PrgRom ? addressInfo.Address : -1;
+	bool isUnlogged = absoluteAddr >= 0 ? _codeDataLogger->IsNone(absoluteAddr) :  false;
 	if(addressInfo.Type == AddressType::PrgRom && addressInfo.Address >= 0 && type != MemoryOperationType::DummyRead && type != MemoryOperationType::DummyWrite && _runToCycle == -1) {
 		if(type == MemoryOperationType::ExecOperand) {
 			_codeDataLogger->SetFlag(absoluteAddr, CdlPrgFlags::Code);
@@ -820,6 +821,9 @@ bool Debugger::ProcessRamOperation(MemoryOperationType type, uint16_t &addr, uin
 		} else if(CheckFlag(DebuggerFlags::BreakOnUnofficialOpCode) && _disassembler->IsUnofficialOpCode(value)) {
 			Step(1);
 			breakSource = BreakSource::BreakOnUnofficialOpCode;
+		} else if(CheckFlag(DebuggerFlags::BreakOnUnlogged) && isUnlogged && type == MemoryOperationType::ExecOpCode && absoluteAddr >= 0) {
+			Step(1);
+			breakSource = BreakSource::BreakOnUnlogged;
 		}
 
 		if(_runToCycle != -1) {
@@ -897,7 +901,7 @@ bool Debugger::ProcessRamOperation(MemoryOperationType type, uint16_t &addr, uin
 	_currentReadValue = nullptr;
 
 	if(type == MemoryOperationType::Write) {
-		if(_runToCycle == -1 && !CheckFlag(DebuggerFlags::IgnoreRedundantWrites) || _memoryManager->DebugRead(addr) != value) {
+		if((_runToCycle == -1 && !CheckFlag(DebuggerFlags::IgnoreRedundantWrites)) || (_memoryManager->DebugRead(addr) != value)) {
 			_memoryAccessCounter->ProcessMemoryWrite(addressInfo, _cpu->GetCycleCount());
 		}
 
@@ -912,7 +916,7 @@ bool Debugger::ProcessRamOperation(MemoryOperationType type, uint16_t &addr, uin
 			}
 		} else if(addr >= 0x4018 && _mapper->IsWriteRegister(addr)) {
 			_eventManager->AddDebugEvent(DebugEventType::MapperRegisterWrite, addr, value);
-		} else if(addr >= 0x4000 && addr <= 0x4015 || addr == 0x4017) {
+		} else if((addr >= 0x4000 && addr <= 0x4015) || addr == 0x4017) {
 			_eventManager->AddDebugEvent(DebugEventType::ApuRegisterWrite, addr, value);
 		} else if(addr == 0x4016) {
 			_eventManager->AddDebugEvent(DebugEventType::ControlRegisterWrite, addr, value);
@@ -999,8 +1003,16 @@ bool Debugger::SleepUntilResume(BreakSource source, uint32_t breakpointId, Break
 
 		_executionStopped = true;
 		_pausedForDebugHelper = breakRequested;
+		int whilePausedRunCounter = 0;
 		while((((stepCount == 0 || _breakRequested) && _suspendCount == 0) || _preventResume > 0) && !_stopFlag) {
 			std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(10));
+			if (preventResume == 0) {
+				whilePausedRunCounter++;
+				if (whilePausedRunCounter > 10) {
+					ProcessEvent(EventType::WhilePaused);
+					whilePausedRunCounter = 0;
+				}
+			}
 			if(stepCount == 0) {
 				_console->ResetRunTimers();
 			}

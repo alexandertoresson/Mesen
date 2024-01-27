@@ -49,6 +49,7 @@ namespace Mesen.GUI.Debugger.Controls
 			Control parent = (Control)Viewer;
 			mnuEditInMemoryViewer.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_EditInMemoryViewer));
 			mnuEditLabel.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_EditLabel));
+			mnuEditCodeComment.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_EditCodeComment));
 			mnuSetNextStatement.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_SetNextStatement));
 			mnuShowNextStatement.InitShortcut(parent, nameof(DebuggerShortcutsConfig.GoToProgramCounter));
 			mnuToggleBreakpoint.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_ToggleBreakpoint));
@@ -263,10 +264,20 @@ namespace Mesen.GUI.Debugger.Controls
 		{
 			if(UpdateContextMenu(_lastLocation)) {
 				if(_lastClickedAddress >= 0) {
+					//get selected adress of debugger text window
+					int startAddress, endAddress;
+					string rangeString;
+					GetSelectedAddressRange(out startAddress, out endAddress, out rangeString);
+
 					AddressTypeInfo info = new AddressTypeInfo();
 					InteropEmu.DebugGetAbsoluteAddressAndType((UInt32)_lastClickedAddress, info);
 					if(info.Address >= 0) {
 						ctrlLabelList.EditLabel((UInt32)info.Address, info.Type);
+						//if that is the same as the address we just edited, restore selected line
+						if (startAddress == info.Address)
+						{
+							GoToDestination(new GoToDestination() { AddressInfo = info });
+						}
 					} else {
 						ctrlLabelList.EditLabel((UInt32)_lastClickedAddress, AddressType.Register);
 					}
@@ -277,6 +288,26 @@ namespace Mesen.GUI.Debugger.Controls
 					if(info != null && info.Address >= 0) {
 						ctrlLabelList.EditLabel((UInt32)info.Address, info.Type);
 					}
+				}
+			}
+		}
+
+		private void mnuEditCodeComment_Click(object sender, EventArgs e)
+		{
+			int startAddress, endAddress;
+			string rangeString;
+			GetSelectedAddressRange(out startAddress, out endAddress, out rangeString);
+			if (startAddress >= 0)
+			{
+				AddressTypeInfo info = new AddressTypeInfo();
+				info.Address = startAddress;
+				info.Type = AddressType.PrgRom;
+				if (info.Address >= 0)
+				{
+					ctrlLabelList.EditComment((UInt32)info.Address, info.Type);
+					GoToDestination destination = new GoToDestination();
+					destination.AddressInfo = info;
+					GoToDestination(destination);
 				}
 			}
 		}
@@ -662,5 +693,6 @@ namespace Mesen.GUI.Debugger.Controls
 			mnuPerfTrackerTextOnly.Checked = mode == PerfTrackerMode.TextOnly;
 			mnuPerfTrackerDisabled.Checked = mode == PerfTrackerMode.Disabled;
 		}
+
 	}
 }

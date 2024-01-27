@@ -51,6 +51,11 @@ A number of options exist to control the way the PNG files are generated:
 
 **Ignore tiles at the edges of the screen (overscan)**: When enabled, this will make the builder ignore any pixels in the overscan area. This is useful in games that contain glitches on the outer edge of the screen. Incorrect palette combinations due to these glitches will be ignored and won't be shown in the PNG files.
 
+**Save frames which the tiles are first shown**: When enabled, the builder will save a screenshot and the composition of the screen in the pack folder when it encounters new tile in a frame. This is useful for checking where that tile is used. These files are not needed in the pack and should be deleted when sharing the pack.
+
+**Tile Type**: This option controls whether only BG tiles or sprite tiles or both are added to the HD Pack.
+
+
 Before you start recording, select the options you want to use and the location to which you want to save the HD Pack, then press the `Start Recording` button.
 
 ## File Format (hires.txt) ##
@@ -108,6 +113,10 @@ A number of built-in conditions can be used to check the value of some flags:
 * `hmirror`: True if the current pixel is a sprite pixel, and the sprite is mirrored horizontally.
 * `vmirror`: True if the current pixel is a sprite pixel, and the sprite is mirrored vertically.
 * `bgpriority`: True if the current pixel is a sprite pixel, and the sprite is marked as a background priority sprite.
+* `sppalette0`: True if the current pixel is a sprite pixel, and the sprite is using the palette at address $3F10.
+* `sppalette1`: True if the current pixel is a sprite pixel, and the sprite is using the palette at address $3F14.
+* `sppalette2`: True if the current pixel is a sprite pixel, and the sprite is using the palette at address $3F18.
+* `sppalette3`: True if the current pixel is a sprite pixel, and the sprite is using the palette at address $3F1C.
 
 **Example:** `[hmirror]<tile>...`
 
@@ -172,6 +181,23 @@ The condition is true when the following expression is true:
 **Syntax**: `<condition>[name - text], frameRange, [divisorValue - integer], [compareValue - integer]`  
 **Example**: `<condition>myCondition,frameRange,8,10` (This condition will be true for the last 2 frames out of every 10 frames)
 
+#### spriteFrameRange ####
+
+The spriteFrameRange conditions can be used to conditionally replace sprite tiles based on the number of frames have passed since the sprite is visible on screen.
+The condition is true when the following expression is true:  
+`[number of frames have passed] % [divisorValue] >= [compareValue]`
+
+**Syntax**: `<condition>[name - text], spriteFrameRange, [divisorValue - integer], [compareValue - integer]`  
+**Example**: `<condition>myCondition,spriteFrameRange,8,10` (This condition will be true for the last 2 frames out of every 10 frames since the sprite is visible)
+
+#### randomBackground ####
+
+The randomBackground conditions can be used to randomly replace background tiles with a given probability.
+The condition is true when the following expression is true:  
+`[random number between 0 and 1 assigned to the tile] <= [compareValue]`
+
+**Syntax**: `<condition>[name - text], randomBackground, [compareValue]`  
+**Example**: `<condition>myCondition,randomBackground,0.1` (This condition will be true for 10% of the background tiles)
 
 ### &lt;tile&gt; tag ###
 
@@ -188,6 +214,20 @@ The `tile data` and `palette data` are used to identify the original tile, while
 
 `brightness` can be used to reuse the same HD tile for multiple original tiles -- this can be useful when a game has fade in and out effects (the brightness can be set to values above 1.0 to increase the PNG's normal brightness level).  
 When `default tile` is enabled (with `Y`), the tile is marked as the `default tile` for all palettes.  Whenever a tile appears on the screen that matches the tile data, but has no rules matching its palette data, the default tile will be used instead.
+
+
+### &lt;addition&gt; tag ###
+
+**Syntax**: `<addition>[tile data], [palette data], [distance x - integer], [distance y - integer], [additional tile data], [additional palette data]`  
+**Example (CHR ROM)**: `<addition>2E,FF16360F,12,-10,FF,FF000000`  
+**Example (CHR RAM)**: `<addition>0E0E079C1E3EA7076101586121010000,0F100017,0,30,00000000000000000000000000000000,FF123456`
+
+For CHR ROM games, `tile data` is an integer (in hexadecimal) representing the position of the original tile in CHR ROM.  
+For CHR RAM games, `tile data` is a 32-character hexadecimal string representing all 16 bytes of the tile.  
+`palette data` is always an 8-character hexadecimal string representing all 4 bytes of the palette used for the tile.  For sprites, the first byte is always "FF".
+
+`<addition>` define one additional tile to be shown when a matching sprite tile is found. The `distance x` and `distance y` parameters define where it will be shown. The `additional tile data` and `additional palette data` parameters define how the additional tile is identified. The tile can only be shown by using `<tile>` tag to specify the replacement.  
+
 
 ### &lt;background&gt; tag ###
 
@@ -228,8 +268,14 @@ Backgrounds can use a PNG's alpha channel to allow the graphics below to show th
 
 ### &lt;bgm&gt; tag ###
 
-**Syntax**: `<bgm>[album - integer],[track - integer],[filename - ogg]`  
-**Example**: `<bgm>0,0,myBgm.ogg`
+**Syntax**: `<bgm>[album - integer],[track - integer],[filename - ogg],[loop point (optional) - integer],[playback option (optional) - integer],[volume (optional) - integer]`  
+**Example**: `<bgm>0,0,myBgm.ogg`  
+**Example (with optional values)**: `<bgm>0,0,myBgm.ogg,40000,1,-1`
+
+`Loop point`: The sample number in the ogg file where the track will loop back to.
+`Playback option`: Use 1 for looping playback, 0 for single playback, -1 for keeping the current value.
+`Volume`: Use 0 to 128 for changing the volume, -1 for keeping the current volume.
+ 
 
 Used to assign a background music track (`.ogg` audio file) to a specific album and track number.
 Album and track numbers are used to form a unique ID for each bgm, allowing up to 64k different bgm tracks.
@@ -331,6 +377,7 @@ These registers return the ASCII string `NEA` (NES Enhanced Audio) - this can be
 * Brightness values above 1.0 are now allowed.
 * Added `disableOriginalTiles` option
 * Background tags can now specify `left` and `top` values.
+* Added `loopback point`, `playback option`, `volume` to `<bgm>` tag.
 
 ### Version 104 ###
 

@@ -87,8 +87,14 @@ void NsfLoader::InitializeFromHeader(RomData &romData)
 	if(header.SoundChips & 0x10) {
 		chips.push_back("Namco 163");
 	}
-	if(header.SoundChips & 0x20) {
+	if (header.SoundChips & 0x20) {
 		chips.push_back("Sunsoft 5B");
+	}
+	if (header.SoundChips & 0x40) {
+		chips.push_back("VT02");
+	}
+	if (header.SoundChips & 0x80) {
+		chips.push_back("EPSM");
 	}
 	if(chips.empty()) {
 		chips.push_back("<none>");

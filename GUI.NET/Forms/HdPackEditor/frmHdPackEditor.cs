@@ -43,6 +43,13 @@ namespace Mesen.GUI.Forms.HdPackEditor
 			toolTip.SetToolTip(picGroupBlankHelp, ResourceHelper.GetMessage("HdPackBuilderGroupBlankHelp"));
 			toolTip.SetToolTip(picLargeSpritesHelp, ResourceHelper.GetMessage("HdPackBuilderLargeSpritesHelp"));
 			toolTip.SetToolTip(picIgnoreOverscanHelp, ResourceHelper.GetMessage("HdPackBuilderIgnoreOverscanHelp"));
+		   toolTip.SetToolTip(picSaveFrameHelp, ResourceHelper.GetMessage("HdPackBuilderSaveFrameHelp"));
+			toolTip.SetToolTip(picTileTypeHelp, ResourceHelper.GetMessage("HdPackBuilderTileTypeHelp"));
+
+			cboTileType.Items.Add(ResourceHelper.GetEnumText(HDPackOuputTileType.Both));
+			cboTileType.Items.Add(ResourceHelper.GetEnumText(HDPackOuputTileType.BG));
+			cboTileType.Items.Add(ResourceHelper.GetEnumText(HDPackOuputTileType.Sprite));
+			cboTileType.SelectedIndex = 0;
 
 			UpdateUI(false);
 		}
@@ -123,6 +130,9 @@ namespace Mesen.GUI.Forms.HdPackEditor
 			chkLargeSprites.Enabled = !isRecording;
 			chkSortByFrequency.Enabled = !isRecording;
 			chkGroupBlankTiles.Enabled = !isRecording;
+		   chkIgnoreOverscan.Enabled = !isRecording;
+			chkSaveFrame.Enabled = !isRecording;
+			cboTileType.Enabled = !isRecording;
 
 			cboChrBankSize.Enabled = !isRecording;
 			cboScale.Enabled = !isRecording;
@@ -156,7 +166,11 @@ namespace Mesen.GUI.Forms.HdPackEditor
 			if(chkIgnoreOverscan.Checked) {
 				flags |= HdPackRecordFlags.IgnoreOverscan;
 			}
-			InteropEmu.HdBuilderStartRecording(txtSaveFolder.Text, ((FilterInfo)cboScale.SelectedItem).FilterType, ((FilterInfo)cboScale.SelectedItem).Scale, flags, (UInt32)Math.Pow(2, cboChrBankSize.SelectedIndex) * 0x400);
+		   if(chkSaveFrame.Checked) {
+			   flags |= HdPackRecordFlags.SaveFrame;
+		   }
+			HDPackOuputTileType tileType = (HDPackOuputTileType)cboTileType.SelectedIndex;
+		 InteropEmu.HdBuilderStartRecording(txtSaveFolder.Text, ((FilterInfo)cboScale.SelectedItem).FilterType, ((FilterInfo)cboScale.SelectedItem).Scale, flags, (UInt32)Math.Pow(2, cboChrBankSize.SelectedIndex) * 0x400, tileType);
 			tmrRefresh.Start();
 
 			UpdateUI(true);

@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Mesen.GUI</RootNamespace>
     <AssemblyName>Mesen</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
@@ -689,6 +690,12 @@
     <Compile Include="Debugger\frmAssembler.Designer.cs">
       <DependentUpon>frmAssembler.cs</DependentUpon>
     </Compile>
+    <Compile Include="Debugger\frmEditComment.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debugger\frmEditComment.Designer.cs">
+      <DependentUpon>frmEditComment.cs</DependentUpon>
+    </Compile>
     <Compile Include="Debugger\frmExternalEditorConfig.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -1307,6 +1314,8 @@
     <Compile Include="RuntimeChecker.cs" />
     <Compile Include="SingleInstance.cs" />
     <Compile Include="TestRunner.cs" />
+    <None Include="app.config" />
+    <None Include="Resources\EditComment.png" />
     <None Include="Resources\MoveDown.png" />
     <None Include="Resources\MoveUp.png" />
     <None Include="Resources\NudDownArrowDarkTheme.png" />
@@ -1436,6 +1445,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Debugger\Controls\ctrlSourceViewer.resx">
       <DependentUpon>ctrlSourceViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Debugger\frmEditComment.resx">
+      <DependentUpon>frmEditComment.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Debugger\frmExternalEditorConfig.resx">
       <DependentUpon>frmExternalEditorConfig.cs</DependentUpon>
@@ -1917,6 +1929,10 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Dependencies\resources.ja.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Dependencies\resources.pl.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>

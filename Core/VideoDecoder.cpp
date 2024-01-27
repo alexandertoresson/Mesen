@@ -253,6 +253,13 @@ void VideoDecoder::TakeScreenshot()
 	}
 }
 
+void VideoDecoder::TakeScreenshot(string filePath)
+{
+	if (_videoFilter) {
+		_videoFilter->TakeScreenshot(_videoFilterType, filePath);
+	}
+}
+
 void VideoDecoder::TakeScreenshot(std::stringstream &stream, bool rawScreenshot)
 {
 	if(!_ppuOutputBuffer) {

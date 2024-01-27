@@ -11,8 +11,10 @@ private:
 	nes_ntsc_setup_t _ntscSetup;
 	nes_ntsc_t _ntscData;
 	bool _keepVerticalRes = false;
+	bool _useExternalPalette = true;
 	uint8_t _palette[512 * 3];
 	uint32_t* _ntscBuffer;
+	bool _ntscBorder = true;
 
 	void GenerateArgbFrame(uint32_t *outputBuffer);
 

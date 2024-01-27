@@ -108,6 +108,7 @@ namespace Mesen.GUI.Debugger
 			this.mnuBreakOnPlay.Checked = ConfigManager.Config.DebugInfo.BreakOnPlay;
 			this.mnuBreakOnOpen.Checked = ConfigManager.Config.DebugInfo.BreakOnOpen;
 			this.mnuBreakOnUnofficialOpcodes.Checked = ConfigManager.Config.DebugInfo.BreakOnUnofficialOpcodes;
+			this.mnuBreakOnUnlogged.Checked = ConfigManager.Config.DebugInfo.BreakOnUnlogged;
 			this.mnuBreakOnBrk.Checked = ConfigManager.Config.DebugInfo.BreakOnBrk;
 			this.mnuBreakOnUninitMemoryRead.Checked = ConfigManager.Config.DebugInfo.BreakOnUninitMemoryRead;
 			this.mnuBreakOnBusConflict.Checked = ConfigManager.Config.DebugInfo.BreakOnBusConflict;
@@ -130,6 +131,7 @@ namespace Mesen.GUI.Debugger
 			this.mnuShowSelectionLength.Checked = ConfigManager.Config.DebugInfo.ShowSelectionLength;
 			this.mnuAlwaysScrollToCenter.Checked = ConfigManager.Config.DebugInfo.AlwaysScrollToCenter;
 			this.mnuRefreshWhileRunning.Checked = ConfigManager.Config.DebugInfo.RefreshWhileRunning;
+			this.mnuReloadRomOnPowerCycle.Checked = ConfigManager.Config.DebugInfo.ReloadRomOnPowerCycle;
 			this.mnuShowMemoryValues.Checked = ConfigManager.Config.DebugInfo.ShowMemoryValuesInCodeWindow;
 			ctrlDebuggerCode.ShowMemoryValues = mnuShowMemoryValues.Checked;
 			ctrlDebuggerCodeSplit.ShowMemoryValues = mnuShowMemoryValues.Checked;
@@ -425,6 +427,7 @@ namespace Mesen.GUI.Debugger
 			SetFlag(DebuggerFlags.ShowVerifiedData, config.ShowVerifiedData);
 			SetFlag(DebuggerFlags.ShowUnidentifiedData, config.ShowUnidentifiedData);
 			SetFlag(DebuggerFlags.BreakOnUnofficialOpCode, config.BreakOnUnofficialOpcodes);
+			SetFlag(DebuggerFlags.BreakOnUnlogged, config.BreakOnUnlogged);
 			SetFlag(DebuggerFlags.BreakOnBrk, config.BreakOnBrk);
 			SetFlag(DebuggerFlags.BreakOnUninitMemoryRead, config.BreakOnUninitMemoryRead);
 			SetFlag(DebuggerFlags.BreakOnDecayedOamRead, config.BreakOnDecayedOamRead);
@@ -1177,6 +1180,13 @@ namespace Mesen.GUI.Debugger
 			UpdateDebuggerFlags();
 		}
 
+		private void mnuBreakOnUnlogged_Click(object sender, EventArgs e)
+		{
+			ConfigManager.Config.DebugInfo.BreakOnUnlogged = mnuBreakOnUnlogged.Checked;
+			ConfigManager.ApplyChanges();
+			UpdateDebuggerFlags();
+		}
+
 		private void mnuBreakOnBrk_Click(object sender, EventArgs e)
 		{
 			ConfigManager.Config.DebugInfo.BreakOnBrk = mnuBreakOnBrk.Checked;
@@ -1268,6 +1278,12 @@ namespace Mesen.GUI.Debugger
 		private void mnuRefreshWhileRunning_Click(object sender, EventArgs e)
 		{
 			ConfigManager.Config.DebugInfo.RefreshWhileRunning = mnuRefreshWhileRunning.Checked;
+			ConfigManager.ApplyChanges();
+		}
+
+		private void mnuReloadRomOnPowerCycle_Click(object sender, EventArgs e)
+		{
+			ConfigManager.Config.DebugInfo.ReloadRomOnPowerCycle = mnuReloadRomOnPowerCycle.Checked;
 			ConfigManager.ApplyChanges();
 		}
 
@@ -1684,7 +1700,11 @@ namespace Mesen.GUI.Debugger
 
 		private void mnuPowerCycle_Click(object sender, EventArgs e)
 		{
-			InteropEmu.PowerCycle();
+			if(ConfigManager.Config.DebugInfo.ReloadRomOnPowerCycle) {
+				InteropEmu.ReloadRom();
+			} else { 
+				InteropEmu.PowerCycle();
+			}
 		}
 
 		protected override void OnResize(EventArgs e)

@@ -116,7 +116,9 @@ enum class AudioChannel
 	VRC6 = 7,
 	VRC7 = 8,
 	Namco163 = 9,
-	Sunsoft5B = 10
+	Sunsoft5B = 10,
+	EPSM_L = 11,
+	EPSM_R = 12,
 };
 
 enum class EqualizerFilterType
@@ -229,10 +231,19 @@ struct NtscFilterSettings
 	bool MergeFields = false;
 	bool VerticalBlend = false;
 	bool KeepVerticalResolution = false;
+	bool ColorimetryCorrection = true;
+	bool UseExternalPalette = true;
 
 	double YFilterLength = 0;
 	double IFilterLength = 0;
 	double QFilterLength = 0;
+
+	double DecodeMatrixIR = 0.956f;
+	double DecodeMatrixQR = 0.621f;
+	double DecodeMatrixIG = -0.272f;
+	double DecodeMatrixQG = -0.647f;
+	double DecodeMatrixIB = -1.105f;
+	double DecodeMatrixQB = 1.702f;
 };
 
 enum class RamPowerOnState
@@ -557,6 +568,7 @@ enum class Language
 	Catalan = 8,
 	Chinese = 9,
 	Italian = 10,
+	Polish = 11,
 };
 
 enum class MouseDevice
@@ -656,8 +668,9 @@ private:
 	
 	bool _audioSettingsChanged = false;
 	uint32_t _audioLatency = 50;
-	double _channelVolume[11] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
-	double _channelPanning[11] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+	uint32_t _EPSMClockFrequency = 8000000;
+	double _channelVolume[13] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+	double _channelPanning[13] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 2.0 };
 	EqualizerFilterType _equalizerFilterType = EqualizerFilterType::None;
 	vector<double> _bandGains = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 	vector<double> _bands = { { 40,56,80,113,160,225,320,450,600,750,1000,2000,3000,4000,5000,6000,7000,10000,12500,15000 } };
@@ -694,6 +707,7 @@ private:
 	bool _spritesEnabled = true;
 	uint32_t _screenRotation = 0;
 	uint32_t _exclusiveRefreshRate = 60;
+	uint32_t _exclusiveRefreshRate2 = 50;
 
 	ConsoleType _consoleType = ConsoleType::Nes;
 	ExpansionPortDevice _expansionDevice = ExpansionPortDevice::None;
@@ -986,6 +1000,12 @@ public:
 		_audioSettingsChanged = true;
 	}
 
+	void SetEPSMClockFrequency(uint32_t clockFrequency)
+	{
+		_EPSMClockFrequency = clockFrequency;
+		_audioSettingsChanged = true;
+	}
+
 	void SetAudioFilterSettings(AudioFilterSettings settings)
 	{
 		_audioFilterSettings = settings;
@@ -1157,6 +1177,11 @@ public:
 		return _audioLatency;
 	}
 
+	uint32_t GetEPSMClockFrequency()
+	{
+		return _EPSMClockFrequency;
+	}
+
 	void SetVideoFilterType(VideoFilterType videoFilterType)
 	{
 		_videoFilterType = videoFilterType;
@@ -1207,7 +1232,27 @@ public:
 		return _pictureSettings;
 	}
 
-	void SetNtscFilterSettings(double artifacts, double bleed, double fringing, double gamma, double resolution, double sharpness, bool mergeFields, double yFilterLength, double iFilterLength, double qFilterLength, bool verticalBlend, bool keepVerticalResolution)
+	void SetNtscFilterSettings(
+		double artifacts,
+		double bleed, 
+		double fringing,
+		double gamma,
+		double resolution,
+		double sharpness,
+		bool mergeFields,
+		double yFilterLength,
+		double iFilterLength,
+		double qFilterLength,
+		double decodeMatrixIR,
+		double decodeMatrixQR,
+		double decodeMatrixIG,
+		double decodeMatrixQG,
+		double decodeMatrixIB,
+		double decodeMatrixQB,
+		bool verticalBlend,
+		bool keepVerticalResolution,
+		bool colorimetryCorrection,
+		bool useExternalPalette)
 	{
 		_ntscFilterSettings.Artifacts = artifacts;
 		_ntscFilterSettings.Bleed = bleed;
@@ -1222,8 +1267,18 @@ public:
 		_ntscFilterSettings.IFilterLength = iFilterLength;
 		_ntscFilterSettings.QFilterLength = qFilterLength;
 
+		_ntscFilterSettings.DecodeMatrixIR = decodeMatrixIR;
+		_ntscFilterSettings.DecodeMatrixQR = decodeMatrixQR;
+		_ntscFilterSettings.DecodeMatrixIG = decodeMatrixIG;
+		_ntscFilterSettings.DecodeMatrixQG = decodeMatrixQG;
+		_ntscFilterSettings.DecodeMatrixIB = decodeMatrixIB;
+		_ntscFilterSettings.DecodeMatrixQB = decodeMatrixQB;
+
+		_ntscFilterSettings.UseExternalPalette = useExternalPalette;
+
 		_ntscFilterSettings.VerticalBlend = verticalBlend;
 		_ntscFilterSettings.KeepVerticalResolution = keepVerticalResolution;
+		_ntscFilterSettings.ColorimetryCorrection = colorimetryCorrection;
 	}
 
 	NtscFilterSettings GetNtscFilterSettings()
@@ -1264,6 +1319,32 @@ public:
 	uint32_t GetExclusiveRefreshRate()
 	{
 		return _exclusiveRefreshRate;
+	}
+
+	void SetExclusiveRefreshRate2(uint32_t refreshRate)
+	{
+		_exclusiveRefreshRate2 = refreshRate;
+	}
+
+	uint32_t GetExclusiveRefreshRate2()
+	{
+		return _exclusiveRefreshRate2;
+	}
+
+	uint32_t GetExclusiveRefreshRateByModel(NesModel m)
+	{
+		switch (m) {
+		case NesModel::NTSC:
+			return _exclusiveRefreshRate;
+			break;
+		case NesModel::PAL:
+		case NesModel::Dendy:
+			return _exclusiveRefreshRate2;
+			break;
+		default:
+			return _exclusiveRefreshRate;
+			break;
+		}
 	}
 
 	void SetExpansionDevice(ExpansionPortDevice expansionDevice)

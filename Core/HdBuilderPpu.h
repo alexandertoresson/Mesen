@@ -65,9 +65,19 @@ protected:
 					sprite.TileIndex = (isChrRam ? (_lastSprite->TileAddr & _chrRamIndexMask) : _lastSprite->AbsoluteTileAddr) / 16;
 					sprite.PaletteColors = ReadPaletteRAM(_lastSprite->PaletteOffset + 3) | (ReadPaletteRAM(_lastSprite->PaletteOffset + 2) << 8) | (ReadPaletteRAM(_lastSprite->PaletteOffset + 1) << 16) | 0xFF000000;
 					sprite.IsChrRamTile = isChrRam;
+					sprite.BackgroundPriority = _lastSprite->BackgroundPriority;
+					sprite.HorizontalMirroring = _lastSprite->HorizontalMirror;
+					sprite.VerticalMirroring = _lastSprite->VerticalMirror;
+					sprite.OffsetX = (int32_t)_cycle - _lastSprite->SpriteX - 1;
+					if (_lastSprite->OffsetY >= 8) {
+						sprite.OffsetY = _lastSprite->OffsetY - 8;
+					}
+					else {
+						sprite.OffsetY = _lastSprite->OffsetY;
+					}
 					_console->GetMapper()->CopyChrTile(_lastSprite->AbsoluteTileAddr & 0xFFFFFFF0, sprite.TileData);
 
-					_hdPackBuilder->ProcessTile(_cycle - 1, _scanline, _lastSprite->AbsoluteTileAddr, sprite, mapper, false, _bankHashes[_lastSprite->TileAddr / _chrRamBankSize], false);
+					_hdPackBuilder->ProcessTile(_cycle - 1, _scanline, _lastSprite->AbsoluteTileAddr, sprite, mapper, _bankHashes[_lastSprite->TileAddr / _chrRamBankSize], false);
 				}
 			}
 
@@ -77,9 +87,11 @@ protected:
 					tile.TileIndex = (isChrRam ? (lastTile->TileAddr & _chrRamIndexMask) : lastTile->AbsoluteTileAddr) / 16;
 					tile.PaletteColors = ReadPaletteRAM(lastTile->PaletteOffset + 3) | (ReadPaletteRAM(lastTile->PaletteOffset + 2) << 8) | (ReadPaletteRAM(lastTile->PaletteOffset + 1) << 16) | (ReadPaletteRAM(0) << 24);
 					tile.IsChrRamTile = isChrRam;
+					tile.OffsetX = (_state.XScroll + ((_cycle - 1) & 0x07)) & 0x07;
+					tile.OffsetY = lastTile->OffsetY;
 					_console->GetMapper()->CopyChrTile(lastTile->AbsoluteTileAddr & 0xFFFFFFF0, tile.TileData);
 
-					_hdPackBuilder->ProcessTile(_cycle - 1, _scanline, lastTile->AbsoluteTileAddr, tile, mapper, false, _bankHashes[lastTile->TileAddr / _chrRamBankSize], hasBgSprite);
+					_hdPackBuilder->ProcessTile(_cycle - 1, _scanline, lastTile->AbsoluteTileAddr, tile, mapper, _bankHashes[lastTile->TileAddr / _chrRamBankSize], hasBgSprite);
 				}
 			}
 		} else {
@@ -121,10 +133,12 @@ public:
 
 	void SendFrame()
 	{
+
 		if(_hdData) {
 			HdPpu::SendFrame();
 		} else {
 			PPU::SendFrame();
 		}
+		_hdPackBuilder->endFrame();
 	}
 };

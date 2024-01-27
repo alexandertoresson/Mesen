@@ -319,7 +319,7 @@ namespace Mesen.GUI.Debugger.Controls
 			_forceRefresh = false;
 			_selectedSprite = ramAddr / 4;
 
-			int spriteY = _spriteRam[ramAddr];
+			int spriteY = _spriteRam[ramAddr] + 1;
 			int tileIndex = _spriteRam[ramAddr + 1];
 			int attributes = _spriteRam[ramAddr + 2];
 			int spriteX = _spriteRam[ramAddr + 3];
@@ -390,10 +390,21 @@ namespace Mesen.GUI.Debugger.Controls
 			}
 
 			_contextMenuSpriteIndex = _selectedSprite;
-			_copyData = ToHdPackFormat(_selectedSprite);
+
+			if (_largeSprites)
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine(ToHdPackFormat(_selectedSprite, false));
+				sb.AppendLine(ToHdPackFormat(_selectedSprite, true));
+				_copyData = sb.ToString();
+			}
+			else {
+				_copyData = ToHdPackFormat(_selectedSprite, false);
+			}
+
 		}
 
-		private string ToHdPackFormat(int spriteIndex)
+		private string ToHdPackFormat(int spriteIndex, bool isLargeSpriteSecondHalf)
 		{
 			int ramAddr = spriteIndex * 4;
 			int tileIndex = _spriteRam[ramAddr + 1];
@@ -401,7 +412,7 @@ namespace Mesen.GUI.Debugger.Controls
 
 			int tileAddr;
 			if(_largeSprites) {
-				tileAddr = ((tileIndex & 0x01) == 0x01 ? 0x1000 : 0x0000) + ((tileIndex & 0xFE) << 4);
+				tileAddr = ((tileIndex & 0x01) == 0x01 ? 0x1000 : 0x0000) + (((tileIndex & 0xFE) + (isLargeSpriteSecondHalf ? 1 : 0)) << 4);
 			} else {
 				tileAddr = _spritePatternAddr + (tileIndex << 4);
 			}
@@ -544,13 +555,31 @@ namespace Mesen.GUI.Debugger.Controls
 				bool verticalMirror = (attributes & 0x80) == 0x80;
 
 				if(spriteY >= 0 && spriteY < 240) {
-					sb.AppendLine(
-						ToHdPackFormat(i) + "," +
-						spriteX.ToString() + "," +
-						spriteY.ToString() + "," +
-						(horizontalMirror ? "Y" : "N") + "," +
-						(verticalMirror ? "Y" : "N")
-					);
+					if (_largeSprites){
+					  sb.AppendLine(
+						  ToHdPackFormat(i, verticalMirror) + "," +
+						  spriteX.ToString() + "," +
+						  spriteY.ToString() + "," +
+						  (horizontalMirror ? "Y" : "N") + "," +
+						  (verticalMirror ? "Y" : "N")
+					  );
+					  sb.AppendLine(
+						  ToHdPackFormat(i, !verticalMirror) + "," +
+						  spriteX.ToString() + "," +
+						  (spriteY + 8).ToString() + "," +
+						  (horizontalMirror ? "Y" : "N") + "," +
+						  (verticalMirror ? "Y" : "N")
+					  );
+					}
+					else{
+					  sb.AppendLine(
+						  ToHdPackFormat(i,  false) + "," +
+						  spriteX.ToString() + "," +
+						  spriteY.ToString() + "," +
+						  (horizontalMirror ? "Y" : "N") + "," +
+						  (verticalMirror ? "Y" : "N")
+					  );
+					}
 				}
 			}
 			if(sb.Length > 0) {

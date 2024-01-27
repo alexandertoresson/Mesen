@@ -131,7 +131,7 @@ namespace Mesen.GUI.Debugger.Controls
 
 					g.ResetTransform();
 
-					using(Font font = new Font(BaseControl.MonospaceFontFamily, 10, GraphicsUnit.Pixel)) {
+					using(Font font = new Font("Microsoft Sans Serif", 10, GraphicsUnit.Pixel)) {
 						using(Brush bg = new SolidBrush(Color.FromArgb(150, Color.LightGray))) {
 							for(int i = 0; i < 4; i++) {
 								if(this.DisplayIndexes) {

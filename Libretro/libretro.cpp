@@ -242,8 +242,18 @@ extern "C" {
 			{ 0 },
 		};
 
+		static const struct retro_system_content_info_override content_overrides[] = {
+			{
+				"nes|fds|unf|unif", /* extensions */
+				false,              /* need_fullpath */
+				false               /* persistent_data */
+			},
+			{ NULL, false, false }
+		};
+
 		retroEnv(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 		retroEnv(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+		retroEnv(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)content_overrides);
 	}
 
 	RETRO_API void retro_set_video_refresh(retro_video_refresh_t sendFrame)
@@ -374,27 +384,27 @@ extern "C" {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::None);
 			} else if(value == "Composite (Blargg)") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::NTSC);
-				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			} else if(value == "S-Video (Blargg)") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::NTSC);
-				_console->GetSettings()->SetNtscFilterSettings(-1.0, 0, -1.0, 0, 0.2, 0.2, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(-1.0, 0, -1.0, 0, 0.2, 0.2, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			} else if(value == "RGB (Blargg)") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::NTSC);
 				_console->GetSettings()->SetPictureSettings(0, 0, 0, 0, 0);
-				_console->GetSettings()->SetNtscFilterSettings(-1.0, -1.0, -1.0, 0, 0.7, 0.2, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(-1.0, -1.0, -1.0, 0, 0.7, 0.2, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			} else if(value == "Monochrome (Blargg)") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::NTSC);
 				_console->GetSettings()->SetPictureSettings(0, 0, -1.0, 0, 0);
-				_console->GetSettings()->SetNtscFilterSettings(-0.2, -0.1, -0.2, 0, 0.7, 0.2, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(-0.2, -0.1, -0.2, 0, 0.7, 0.2, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			} else if(value == "Bisqwit 2x") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::BisqwitNtscQuarterRes);
-				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			} else if(value == "Bisqwit 4x") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::BisqwitNtscHalfRes);
-				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			} else if(value == "Bisqwit 8x") {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::BisqwitNtsc);
-				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, false, true);
+				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true);
 			}
 		}
 
@@ -730,36 +740,90 @@ extern "C" {
 	{
 		static const string validGgLetters = "APZLGITYEOXUKSVN";
 		static const string validParLetters = "0123456789ABCDEF";
+		int chl = 0;
 
 		string code = codeStr;
 		std::transform(code.begin(), code.end(), code.begin(), ::toupper);
-		if(code.size() == 7 && code[4] == ':') {
-			string address = code.substr(0, 4);
-			string value = code.substr(5, 2);
-			_console->GetCheatManager()->AddCustomCode(HexUtilities::FromHex(address), HexUtilities::FromHex(value));
-		} else if(code.size() == 10 && code[4] == '?' && code[7] == ':') {
-			string address = code.substr(0, 4);
-			string comparison = code.substr(5, 2);
-			string value = code.substr(8, 2);
-			_console->GetCheatManager()->AddCustomCode(HexUtilities::FromHex(address), HexUtilities::FromHex(value), HexUtilities::FromHex(comparison));
-		} else if(code.size() == 6 || code.size() == 8) {
+
+		if(code[4] == ':') {
+			for(;;) {
+				string address = code.substr((0 + chl), 4);
+				string value = code.substr((5 + chl), 2);
+				_console->GetCheatManager()->AddCustomCode(HexUtilities::FromHex(address), HexUtilities::FromHex(value));
+				if(code[(7 + chl)] != '+') {
+					return;
+				}
+				chl = (chl + 8);
+			}
+		}
+
+		else if(code[4] == '?' && code[7] == ':') {
+			for(;;) {
+				string address = code.substr((0 + chl), 4);
+				string comparison = code.substr((5 + chl), 2);
+				string value = code.substr((8 + chl), 2);
+				_console->GetCheatManager()->AddCustomCode(HexUtilities::FromHex(address), HexUtilities::FromHex(value), HexUtilities::FromHex(comparison));
+				if(code[(10 + chl)] != '+') {
+					return;
+				}
+				chl = (chl + 11);
+			}
+		}
+
+		else {
 			//This is either a GG or PAR code
 			bool isValidGgCode = true;
-			bool isValidParCode = code.size() == 8;
-			for(size_t i = 0; i < code.size(); i++) {
+			bool isValidParCode = true;
+
+			for(size_t i = 0; i < 6; i++) {
 				if(validGgLetters.find(code[i]) == string::npos) {
 					isValidGgCode = false;
 				}
+			}
+			for(size_t i = 0; i < 8; i++) {
 				if(validParLetters.find(code[i]) == string::npos) {
 					isValidParCode = false;
 				}
 			}
 
-			if(isValidGgCode) {
-				_console->GetCheatManager()->AddGameGenieCode(code);
-			} else if(isValidParCode) {
+			if(isValidGgCode && code[6] == '+') {
+				for(;;) {
+					string code1 = code.substr((0 + chl), 6);
+					_console->GetCheatManager()->AddGameGenieCode(code1);;
+					if(code[(6 + chl)] != '+') {
+						return;
+					}
+					chl = (chl + 7);
+				}
+			}
+			else if(isValidGgCode && code[8] == '+') {
+				for(;;) {
+					string code1 = code.substr((0 + chl), 8);
+					_console->GetCheatManager()->AddGameGenieCode(code1);;
+					if(code[(8 + chl)] != '+') {
+						return;
+					}
+					chl = (chl + 9);
+				}
+			}
+			else if(isValidGgCode) {
+				_console->GetCheatManager()->AddGameGenieCode(code);;
+			}
+
+			else if(isValidParCode && code[8] == '+') {
+				for(;;) {
+					string code1 = code.substr((0 + chl), 8);
+					_console->GetCheatManager()->AddProActionRockyCode(HexUtilities::FromHex(code1));
+					if(code[(8 + chl)] != '+') {
+						return;
+					}
+					chl = (chl + 9);
+				}
+			}
+			else if(isValidParCode) {
 				_console->GetCheatManager()->AddProActionRockyCode(HexUtilities::FromHex(code));
 			}
+
 		}
 
 	}
@@ -1034,7 +1098,43 @@ extern "C" {
 		_console->GetSettings()->SetControllerType(2, ControllerType::None);
 		_console->GetSettings()->SetControllerType(3, ControllerType::None);
 
-		VirtualFile romData(game->data, game->size, game->path);
+		// Attempt to fetch extended game info
+		const struct retro_game_info_ext *gameExt = NULL;
+		const void *gameData = NULL;
+		size_t gameSize = 0;
+		string gamePath("");
+		if (retroEnv(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &gameExt)) {
+			gameData = gameExt->data;
+			gameSize = gameExt->size;
+			if (gameExt->file_in_archive) {
+				// We don't have a 'physical' file in this
+				// case, but the core still needs a filename
+				// in order to detect associated content
+				// (i.e. HdPacks). We therefore fake it, using
+				// the content directory, canonical content
+				// name, and content file extension
+#if defined(_WIN32)
+				char slash = '\\';
+#else
+				char slash = '/';
+#endif
+				gamePath = string(gameExt->dir) +
+							  string(1, slash) +
+							  string(gameExt->name) +
+							  "." +
+							  string(gameExt->ext);
+			} else {
+				gamePath = gameExt->full_path;
+			}
+		} else {
+			// No extended game info; all we have is the
+			// content fullpath from the retro_game_info
+			// struct
+			gamePath = game->path;
+		}
+
+		// Load content
+		VirtualFile romData(gameData, gameSize, gamePath);
 		bool result = _console->Initialize(romData);
 
 		if(result) {
@@ -1084,7 +1184,9 @@ extern "C" {
 
 		info->library_name = "Mesen";
 		info->library_version = _mesenVersion.c_str();
-		info->need_fullpath = false;
+		// need_fullpath is required since HdPacks are
+		// identified via the rom file name
+		info->need_fullpath = true;
 		info->valid_extensions = "nes|fds|unf|unif";
 		info->block_extract = false;
 	}

@@ -48,9 +48,9 @@ protected:
 			SetPpuMemoryMapping(0x2000, 0x3FFF, ChrMemoryType::ChrRam, 0x6000, MemoryAccessType::ReadWrite);
 		}
 
+		_orgPrgRom = vector<uint8_t>(_prgRom, _prgRom + _prgSize);
 		if(HasBattery()) {
 			AddRegisterRange(0x8000, 0xFFFF, MemoryOperation::Read);
-			_orgPrgRom = vector<uint8_t>(_prgRom, _prgRom + _prgSize);
 			ApplySaveData();
 		}
 	}
@@ -115,8 +115,8 @@ protected:
 	void WriteRegister(uint16_t addr, uint8_t value) override
 	{
 		if(!HasBattery() || addr >= 0xC000) {
-			SelectPRGPage(0, value & 0x1F);
-			_prgBank = value & 0x1F;
+			SelectPRGPage(0, value);
+			_prgBank = value;
 
 			SelectCHRPage(0, (value >> 5) & 0x03);
 

@@ -146,6 +146,12 @@ CdlRatios CodeDataLogger::GetRatios()
 	return ratios;
 }
 
+bool CodeDataLogger::IsNone(uint32_t absoluteAddr)
+{
+	return _cdlData[absoluteAddr] == (uint8_t)CdlPrgFlags::None;
+}
+
+
 bool CodeDataLogger::IsCode(uint32_t absoluteAddr)
 {
 	return (_cdlData[absoluteAddr] & (uint8_t)CdlPrgFlags::Code) == (uint8_t)CdlPrgFlags::Code;

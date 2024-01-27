@@ -62,7 +62,7 @@ namespace Mesen.GUI.Debugger.Controls
 						g.DrawImageUnscaled(source, 0, 0);
 
 						g.ResetTransform();
-						Font font = new Font(BaseControl.MonospaceFontFamily, BaseControl.DefaultFontSize - 2, GraphicsUnit.Pixel);
+						Font font = new Font("Microsoft Sans Serif", BaseControl.DefaultFontSize /*- 2*/, GraphicsUnit.Pixel);
 						using(Brush bg = new SolidBrush(Color.FromArgb(150, Color.LightGray))) {
 							for(int y = 0; y < 4; y++) {
 								for(int x = 0; x < 4; x++) {

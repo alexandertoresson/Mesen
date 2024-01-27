@@ -22,21 +22,24 @@ OggReader::~OggReader()
 	}
 }
 
-bool OggReader::Init(string filename, bool loop, uint32_t sampleRate, uint32_t startOffset)
+bool OggReader::Init(string filename, bool loop, uint32_t sampleRate, uint32_t startOffset, uint32_t loopPoint)
 {
 	int error;
 	VirtualFile file = filename;
 	_fileData = vector<uint8_t>(100000);
 	if(file.ReadFile(_fileData)) {
 		_vorbis = stb_vorbis_open_memory(_fileData.data(), (int)_fileData.size(), &error, nullptr);
+		
 		if(_vorbis) {
 			_loop = loop;
+			_loopPoint = loopPoint;
 			_oggSampleRate = stb_vorbis_get_info(_vorbis).sample_rate;
 			if(startOffset > 0) {
 				stb_vorbis_seek(_vorbis, startOffset);
 			}
 			blip_set_rates(_blipLeft, _oggSampleRate, sampleRate);
 			blip_set_rates(_blipRight, _oggSampleRate, sampleRate);
+
 			return true;
 		}
 	}
@@ -78,7 +81,7 @@ bool OggReader::LoadSamples()
 
 	if(samplesReturned < OggReader::SamplesToRead) {
 		if(_loop) {
-			stb_vorbis_seek_start(_vorbis);
+			stb_vorbis_seek(_vorbis, _loopPoint);
 			LoadSamples();
 		} else {
 			_done = true;

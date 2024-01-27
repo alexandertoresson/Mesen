@@ -633,6 +633,7 @@ namespace InteropEmu {
 		DllExport void __stdcall SetMasterVolume(double volume, double volumeReduction, ConsoleId consoleId) { GetConsoleById(consoleId)->GetSettings()->SetMasterVolume(volume, volumeReduction); }
 		DllExport void __stdcall SetSampleRate(uint32_t sampleRate) { _settings->SetSampleRate(sampleRate); }
 		DllExport void __stdcall SetAudioLatency(uint32_t msLatency) { _settings->SetAudioLatency(msLatency); }
+		DllExport void __stdcall SetEPSMClockFrequency(uint32_t clockFrequency) { _settings->SetEPSMClockFrequency(clockFrequency); }
 		DllExport void __stdcall SetAudioFilterSettings(AudioFilterSettings settings) { _settings->SetAudioFilterSettings(settings); }
 		DllExport void __stdcall SetRunAheadFrames(uint32_t frameCount) { _settings->SetRunAheadFrames(frameCount); }
 
@@ -653,13 +654,14 @@ namespace InteropEmu {
 		DllExport void __stdcall SetVideoScale(double scale, ConsoleId consoleId) { GetConsoleById(consoleId)->GetSettings()->SetVideoScale(scale); }
 		DllExport void __stdcall SetScreenRotation(uint32_t angle) { _settings->SetScreenRotation(angle); }
 		DllExport void __stdcall SetExclusiveRefreshRate(uint32_t angle) { _settings->SetExclusiveRefreshRate(angle); }
+		DllExport void __stdcall SetExclusiveRefreshRate2(uint32_t angle) { _settings->SetExclusiveRefreshRate2(angle); }
 		DllExport void __stdcall SetVideoAspectRatio(VideoAspectRatio aspectRatio, double customRatio) { _settings->SetVideoAspectRatio(aspectRatio, customRatio); }
 		DllExport void __stdcall SetVideoFilter(VideoFilterType filter) { _settings->SetVideoFilterType(filter); }
 		DllExport void __stdcall SetVideoResizeFilter(VideoResizeFilter filter) { _settings->SetVideoResizeFilter(filter); }
 		DllExport void __stdcall GetRgbPalette(uint32_t *paletteBuffer) { _settings->GetUserRgbPalette(paletteBuffer); }
 		DllExport void __stdcall SetRgbPalette(uint32_t *paletteBuffer, uint32_t paletteSize) { _settings->SetUserRgbPalette(paletteBuffer, paletteSize); }
 		DllExport void __stdcall SetPictureSettings(double brightness, double contrast, double saturation, double hue, double scanlineIntensity) { _settings->SetPictureSettings(brightness, contrast, saturation, hue, scanlineIntensity); }
-		DllExport void __stdcall SetNtscFilterSettings(double artifacts, double bleed, double fringing, double gamma, double resolution, double sharpness, bool mergeFields, double yFilterLength, double iFilterLength, double qFilterLength, bool verticalBlend) { _settings->SetNtscFilterSettings(artifacts, bleed, fringing, gamma, resolution, sharpness, mergeFields, yFilterLength, iFilterLength, qFilterLength, verticalBlend, false); }
+		DllExport void __stdcall SetNtscFilterSettings(double artifacts, double bleed, double fringing, double gamma, double resolution, double sharpness, bool mergeFields, double yFilterLength, double iFilterLength, double qFilterLength, double decodeMatrixIR, double decodeMatrixQR, double decodeMatrixIG, double decodeMatrixQG, double decodeMatrixIB, double decodeMatrixQB, bool verticalBlend, bool colorimetryCorrection, bool useExternalPalette) { _settings->SetNtscFilterSettings(artifacts, bleed, fringing, gamma, resolution, sharpness, mergeFields, yFilterLength, iFilterLength, qFilterLength, decodeMatrixIR, decodeMatrixQR, decodeMatrixIG, decodeMatrixQG, decodeMatrixIB, decodeMatrixQB, verticalBlend, false, colorimetryCorrection, useExternalPalette); }
 		DllExport void __stdcall SetPauseScreenMessage(char* message) { _settings->SetPauseScreenMessage(message); }
 
 		DllExport void __stdcall SetInputDisplaySettings(uint8_t visiblePorts, InputDisplayPosition displayPosition, bool displayHorizontally) { _settings->SetInputDisplaySettings(visiblePorts, displayPosition, displayHorizontally); }
@@ -769,7 +771,7 @@ namespace InteropEmu {
 
 		DllExport bool __stdcall IsHdPpu() { return _console->IsHdPpu(); }
 
-		DllExport void __stdcall HdBuilderStartRecording(char* saveFolder, ScaleFilterType filterType, uint32_t scale, uint32_t flags, uint32_t chrRamBankSize) { _console->StartRecordingHdPack(saveFolder, filterType, scale, flags, chrRamBankSize); }
+		DllExport void __stdcall HdBuilderStartRecording(char* saveFolder, ScaleFilterType filterType, uint32_t scale, uint32_t flags, uint32_t chrRamBankSize, uint32_t outTileType) { _console->StartRecordingHdPack(saveFolder, filterType, scale, flags, chrRamBankSize, outTileType); }
 		DllExport void __stdcall HdBuilderStopRecording() { _console->StopRecordingHdPack(); }
 
 		DllExport void __stdcall HdBuilderGetChrBankList(uint32_t* bankBuffer) { HdPackBuilder::GetChrBankList(bankBuffer); }

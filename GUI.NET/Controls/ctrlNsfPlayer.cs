@@ -274,8 +274,9 @@ namespace Mesen.GUI.Controls
 					lblMmc5.ForeColor = (header.SoundChips & 0x08) == 0x08 ? Color.White : Color.Gray;
 					lblNamco.ForeColor = (header.SoundChips & 0x10) == 0x10 ? Color.White : Color.Gray;
 					lblSunsoft.ForeColor = (header.SoundChips & 0x20) == 0x20 ? Color.White : Color.Gray;
+					lblEpsm.ForeColor = (header.SoundChips & 0x80) == 0x80 ? Color.White : Color.Gray;
 
-					if(InteropEmu.IsPaused()) {
+					if (InteropEmu.IsPaused()) {
 						btnPause.Image = Properties.Resources.Play;
 					} else {
 						btnPause.Image = Properties.Resources.Pause;

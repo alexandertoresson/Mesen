@@ -30,6 +30,7 @@ enum class IRQSource
 	FrameCounter = 2,
 	DMC = 4,
 	FdsDisk = 8,
+	EPSM = 16,
 };
 
 enum class MemoryOperation
@@ -163,6 +164,7 @@ struct PPUState
 	uint16_t TmpVideoRamAddr;
 	bool WriteToggle;
 
+	uint16_t bgTileAddr; //used by HD ppu
 	uint16_t HighBitShift;
 	uint16_t LowBitShift;
 };
@@ -176,6 +178,7 @@ struct TileInfo
 	
 	int32_t AbsoluteTileAddr; //used by HD ppu
 	uint8_t OffsetY; //used by HD ppu
+	uint16_t bgTileAddr; //used by HD ppu
 };
 
 struct SpriteInfo : TileInfo
@@ -185,6 +188,7 @@ struct SpriteInfo : TileInfo
 	uint8_t SpriteX;
 
 	bool VerticalMirror; //used by HD ppu
+	uint8_t OAMIndex; //used by HD ppu
 };
 
 struct ApuLengthCounterState

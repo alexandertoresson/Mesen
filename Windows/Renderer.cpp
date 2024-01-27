@@ -288,7 +288,7 @@ HRESULT Renderer::InitDevice()
 	sd.BufferDesc.Width = _realScreenWidth;
 	sd.BufferDesc.Height = _realScreenHeight;
 	sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	sd.BufferDesc.RefreshRate.Numerator = _console->GetSettings()->GetExclusiveRefreshRate();
+	sd.BufferDesc.RefreshRate.Numerator = _console->GetSettings()->GetExclusiveRefreshRateByModel(_console->GetModel());
 	sd.BufferDesc.RefreshRate.Denominator = 1;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.Flags = _fullscreen ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0;

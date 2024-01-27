@@ -135,6 +135,55 @@ struct HdPackBgPriorityCondition : public HdPackCondition
 	}
 };
 
+struct HdPackSpPalette0Condition : public HdPackCondition
+{
+	string GetConditionName() override { return "sppalette0"; }
+	string ToString() override { return ""; }
+	bool IsExcludedFromFile() override { return true; }
+
+	bool InternalCheckCondition(HdScreenInfo* screenInfo, int x, int y, HdPpuTileInfo* tile) override
+	{
+		return tile && ((0x03 & (tile->PaletteOffset >> 2)) == 0x00);
+	}
+};
+
+struct HdPackSpPalette1Condition : public HdPackCondition
+{
+	string GetConditionName() override { return "sppalette1"; }
+	string ToString() override { return ""; }
+	bool IsExcludedFromFile() override { return true; }
+
+	bool InternalCheckCondition(HdScreenInfo* screenInfo, int x, int y, HdPpuTileInfo* tile) override
+	{
+		return tile && ((0x03 & (tile->PaletteOffset >> 2)) == 0x01);
+	}
+};
+
+struct HdPackSpPalette2Condition : public HdPackCondition
+{
+	string GetConditionName() override { return "sppalette2"; }
+	string ToString() override { return ""; }
+	bool IsExcludedFromFile() override { return true; }
+
+	bool InternalCheckCondition(HdScreenInfo* screenInfo, int x, int y, HdPpuTileInfo* tile) override
+	{
+		return tile && ((0x03 & (tile->PaletteOffset >> 2)) == 0x02);
+	}
+};
+
+struct HdPackSpPalette3Condition : public HdPackCondition
+{
+	string GetConditionName() override { return "sppalette3"; }
+	string ToString() override { return ""; }
+	bool IsExcludedFromFile() override { return true; }
+
+	bool InternalCheckCondition(HdScreenInfo* screenInfo, int x, int y, HdPpuTileInfo* tile) override
+	{
+		return tile && ((0x03 & (tile->PaletteOffset >> 2)) == 0x03);
+	}
+};
+
+
 struct HdPackMemoryCheckCondition : public HdPackBaseMemoryCondition
 {
 	HdPackMemoryCheckCondition() { _useCache = true; }
@@ -296,5 +345,60 @@ struct HdPackSpriteNearbyCondition : public HdPackBaseTileCondition
 		}
 
 		return false;
+	}
+};
+
+struct HdPackSpriteFrameRangeCondition : public HdPackCondition
+{
+	uint32_t OperandA;
+	uint32_t OperandB;
+
+	string GetConditionName() override { return "spriteFrameRange"; }
+
+	void Initialize(uint32_t operandA, uint32_t operandB)
+	{
+		OperandA = operandA;
+		OperandB = operandB;
+	}
+
+	string ToString() override
+	{
+		stringstream out;
+		out << "<condition>" << Name << "," << GetConditionName() << ",";
+		out << OperandA << ",";
+		out << OperandB;
+
+		return out.str();
+	}
+
+	bool InternalCheckCondition(HdScreenInfo* screenInfo, int x, int y, HdPpuTileInfo* tile) override
+	{
+		return (screenInfo->FrameNumber - screenInfo->spriteFrameRanges[tile->OAMIndex].startFrameNumber) % OperandA >= OperandB;
+	}
+};
+
+struct HdPackRandomBackgroundCondition : public HdPackCondition
+{
+	float OperandA;
+
+	string GetConditionName() override { return "randomBackground"; }
+
+	void Initialize(float operandA)
+	{
+		OperandA = operandA;
+	}
+
+	string ToString() override
+	{
+		stringstream out;
+		out << "<condition>" << Name << "," << GetConditionName() << ",";
+		out << OperandA;
+
+		return out.str();
+	}
+
+	bool InternalCheckCondition(HdScreenInfo* screenInfo, int x, int y, HdPpuTileInfo* tile) override
+	{
+		return screenInfo->nameTableRandVal[tile->nameTableIdx] <= OperandA;
 	}
 };

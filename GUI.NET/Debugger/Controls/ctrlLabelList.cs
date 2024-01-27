@@ -75,6 +75,64 @@ namespace Mesen.GUI.Debugger.Controls
 			}
 		}
 
+		public static void EditComment(UInt32 address, AddressType type)
+		{
+			string autoName = "C" + address.ToString("X4");
+			CodeLabel existingLabel = LabelManager.GetLabel(address, type);
+			CodeLabel newLabel = new CodeLabel()
+			{
+				Address = existingLabel?.Address ?? address,
+				AddressType = existingLabel?.AddressType ?? type,
+				Label = existingLabel?.Label,
+				Comment = existingLabel?.Comment,
+				Length = existingLabel?.Length ?? 1
+			};
+			if (existingLabel == null)
+			{
+				newLabel.Label = autoName;
+			}
+			bool isMultiLine = false;
+
+			if (existingLabel != null && existingLabel.Comment.Contains("\r\n"))
+			{
+				isMultiLine = true;
+			}
+
+			if (isMultiLine)
+			{
+				frmEditLabel frm = new frmEditLabel(newLabel, existingLabel, true);
+				if (frm.ShowDialog() == DialogResult.OK)
+				{
+					bool empty = string.IsNullOrWhiteSpace(newLabel.Comment) && newLabel.Label == autoName;
+					if (existingLabel != null)
+					{
+						LabelManager.DeleteLabel(existingLabel, empty);
+					}
+					if (!empty)
+					{
+						LabelManager.SetLabel(newLabel.Address, newLabel.AddressType, newLabel.Label, newLabel.Comment, true, CodeLabelFlags.None, newLabel.Length);
+					}
+				}
+			}
+			else
+			{
+				frmEditComment frm = new frmEditComment(newLabel, existingLabel);
+				if (frm.ShowDialog() == DialogResult.OK)
+				{
+					bool empty = string.IsNullOrWhiteSpace(newLabel.Comment) && newLabel.Label == autoName;
+					if (existingLabel != null)
+					{
+						LabelManager.DeleteLabel(existingLabel, empty);
+					}
+					if (!empty)
+					{
+						LabelManager.SetLabel(newLabel.Address, newLabel.AddressType, newLabel.Label, newLabel.Comment, true, CodeLabelFlags.None, newLabel.Length);
+					}
+				}
+			}
+		}
+
+
 		public int CompareLabels(ListViewItem x, ListViewItem y)
 		{
 			int result = String.Compare(((ListViewItem)x).SubItems[_sortColumn].Text, ((ListViewItem)y).SubItems[_sortColumn].Text);

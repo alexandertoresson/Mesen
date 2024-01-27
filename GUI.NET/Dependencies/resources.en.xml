@@ -244,7 +244,8 @@
 			<Control ID="chkUseHdPacks">Use HDNes HD packs</Control>
 			<Control ID="chkUseExclusiveFullscreen">Use exclusive fullscreen mode</Control>
 			<Control ID="lblFullscreenResolution">Fullscreen Resolution:</Control>
-			<Control ID="lblRequestedRefreshRate">Requested Refresh Rate:</Control>
+			<Control ID="lblRequestedRefreshRate">Requested Refresh Rate NTSC:</Control>
+			<Control ID="lblRequestedRefreshRate2">PAL / Dendy:</Control>
 			<Control ID="tpgOverscan">Overscan</Control>
 			<Control ID="tpgOverscanGlobal">Global</Control>
 			<Control ID="tpgOverscanGameSpecific">Game-Specific</Control>
@@ -624,6 +625,8 @@
 			<Control ID="chkLargeSprites">Use 8x16 sprite display mode</Control>
 			<Control ID="chkGroupBlankTiles">Group blank tiles</Control>
 			<Control ID="chkIgnoreOverscan">Ignore tiles at the edges of the screen (overscan)</Control>
+			<Control ID="chkSaveFrame">Save frames which the tiles are first shown</Control>
+			<Control ID="chkTileType">Choose which tiles are recorded</Control>
 			<Control ID="lblFolder">Save Folder:</Control>
 			<Control ID="btnSelectFolder">Browse...</Control>
 			<Control ID="btnStartRecording">Start Recording</Control>
@@ -759,6 +762,73 @@
 		</Form>
 		<Form ID="frmBandaiMicrophone">
 		</Form>
+		<Form ID="frmApuViewer">
+		</Form>
+		<Form ID="frmAssembler">
+		</Form>
+		<Form ID="frmBreakIn">
+		</Form>
+		<Form ID="frmBreakOn">
+		</Form>
+		<Form ID="frmBreakpoint">
+		</Form>
+		<Form ID="frmCodePreviewTooltip">
+		</Form>
+		<Form ID="frmCodeTooltip">
+		</Form>
+		<Form ID="frmDbgPreferences">
+		</Form>
+		<Form ID="frmDbgShortcutGetKey">
+		</Form>
+		<Form ID="frmDebugger">
+		</Form>
+		<Form ID="frmDebuggerColors">
+		</Form>
+		<Form ID="frmEditComment">
+		</Form>
+		<Form ID="frmEditHeader">
+		</Form>
+		<Form ID="frmEditLabel">
+		</Form>
+		<Form ID="frmEventViewer">
+		</Form>
+		<Form ID="frmExternalEditorConfig">
+		</Form>
+		<Form ID="frmFadeSpeed">
+		</Form>
+		<Form ID="frmFindOccurrences">
+		</Form>
+		<Form ID="frmGoToAll">
+		</Form>
+		<Form ID="frmGoToLine">
+		</Form>
+		<Form ID="frmImportSettings">
+		</Form>
+		<Form ID="frmMemoryViewer">
+		</Form>
+		<Form ID="frmMemoryViewerColors">
+		</Form>
+		<Form ID="frmOpCodeTooltip">
+		</Form>
+		<Form ID="frmPpuViewer">
+		</Form>
+		<Form ID="frmProfiler">
+		</Form>
+		<Form ID="frmScript">
+		</Form>
+		<Form ID="frmSelectColor">
+		</Form>
+		<Form ID="frmSetScriptTimeout">
+		</Form>
+		<Form ID="frmTextHooker">
+		</Form>
+		<Form ID="frmTraceLogger">
+		</Form>
+		<Form ID="frmWatchWindow">
+		</Form>
+		<Form ID="TooltipForm">
+		</Form>
+
 	</Forms>
 	<UserControls>
 		<UserControl ID="ctrlExcitingBoxingConfig">
@@ -867,8 +937,10 @@
 		<Message ID="HdPackBuilderBankSizeHelp">This option is only available for CHR RAM games.  CHR RAM games have no&#xA;fixed "banks" - they are dynamically created by the game's code.&#xA;This option alters the HD Pack Builder's behavior when grouping the tiles into &#xA;the PNG files - a smaller bank size will usually result in less PNG &#xA;files (but depending on the game's code, larger values may produce &#xA;better results).</Message>
 		<Message ID="HdPackBuilderFrequencyHelp">When this option is enabled, the tiles in PNG files are sorted by the&#xA;frequency at which they are shown on the screen while recording (more &#xA;common palettes will be grouped together in the first PNG for a specific bank &#xA;number. If this option is unchecked, the PNGs will be sorted by palette - &#xA;each PNG will only contain up to 4 different colors in this case.</Message>
 		<Message ID="HdPackBuilderGroupBlankHelp">This option groups all the blank tiles sequentially into the same PNG&#xA;files - this helps reduce the number of PNG files produced by removing &#xA;almost-empty PNG files containing only blank tiles.</Message>
-		<Message ID="HdPackBuilderLargeSpritesHelp">When enabled, this option will alter the display order of CHR banks&#xA;that contain only sprites to make the sprites easier to edit in the PNG file.</Message>
+		<Message ID="HdPackBuilderLargeSpritesHelp">When enabled, this option will alter the display order of CHR banks&#xA;that contain only sprites to make the sprites easier to edit in the PNG file.&#xA;This should be used only when the game is a CHR-ROM game and uses 8x16 sprites.</Message>
 		<Message ID="HdPackBuilderIgnoreOverscanHelp">When enabled, this will make the builder ignore any pixels in the overscan area.&#xA;This is useful in games that contain glitches on the outer edge of the screen.&#xA;Incorrect palette combinations due to these glitches will be ignored and won't be shown in the PNG files.</Message>
+		<Message ID="HdPackBuilderSaveFrameHelp">When enabled, the builder will save a screenshot and the composition of the screen in the pack folder when it encounters new tile in a frame.&#xA;This is useful for checking where that tile is used.&#xA;These files are not needed in the pack and should be deleted when sharing the pack.</Message>
+		<Message ID="HdPackBuilderTileTypeHelp">Choose which of the tiles are recorded</Message>
 
 		<Message ID="InstallHdPackWrongRom">The selected HD Pack is not compatible with the currently running game and cannot be installed.</Message>
 		<Message ID="InstallHdPackError">An error occurred while trying to install the HD Pack: &#xA;&#xA;{0}</Message>
@@ -1132,6 +1204,7 @@
 			<Value ID="Catalan">Català</Value>
 			<Value ID="Chinese">中文</Value>
 			<Value ID="Italian">Italiano</Value>
+			<Value ID="Polish">Polski</Value>
 		</Enum>
 		<Enum ID="RamPowerOnState">
 			<Value ID="AllZeros">All 0s (Default)</Value>
@@ -1289,6 +1362,7 @@
 			<Value ID="PpuStep">PPU Step</Value>
 			<Value ID="BreakOnBrk">BRK</Value>
 			<Value ID="BreakOnUnofficialOpCode">Unofficial OP code</Value>
+			<Value ID="BreakOnUnlogged">Unlogged code</Value>
 			<Value ID="BreakOnReset">Reset event</Value>
 			<Value ID="BreakOnFocus">Debugger focused</Value>
 			<Value ID="BreakOnUninitMemoryRead">Uninitialized memory read</Value>
@@ -1369,6 +1443,11 @@
 			<Value ID="SnesMouse">SNES Mouse</Value>
 			<Value ID="GenericMulticart">Generic Multicart</Value>
 			<Value ID="SnesControllers">SNES Controllers</Value>
+		</Enum>
+		<Enum ID="HDPackOuputTileType">
+			<Value ID="Both">BG + Sprite</Value>
+			<Value ID="BG">BG Only</Value>
+			<Value ID="Sprite">Sprite Only</Value>
 		</Enum>
 	</Enums>
 </Resources>

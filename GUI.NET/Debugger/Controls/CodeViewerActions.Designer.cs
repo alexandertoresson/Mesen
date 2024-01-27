@@ -63,6 +63,7 @@
 			this.mnuHidePrgAddresses = new System.Windows.Forms.ToolStripMenuItem();
 			this.sepEditLabel = new System.Windows.Forms.ToolStripSeparator();
 			this.mnuEditLabel = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuEditCodeComment = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuEditInMemoryViewer = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuToggleBreakpoint = new System.Windows.Forms.ToolStripMenuItem();
 			this.sepAddToWatch = new System.Windows.Forms.ToolStripSeparator();
@@ -101,6 +102,7 @@
             this.sepEditLabel,
             this.mnuEditLabel,
             this.mnuEditInMemoryViewer,
+            this.mnuEditCodeComment,
             this.mnuToggleBreakpoint,
             this.sepAddToWatch,
             this.mnuAddToWatch,
@@ -372,6 +374,14 @@
 			this.mnuEditLabel.Text = "Edit Label";
 			this.mnuEditLabel.Click += new System.EventHandler(this.mnuEditLabel_Click);
 			// 
+			// mnuEditCodeComment
+			// 
+			this.mnuEditCodeComment.Image = global::Mesen.GUI.Properties.Resources.EditComment;
+			this.mnuEditCodeComment.Name = "mnuSetComment";
+			this.mnuEditCodeComment.Size = new System.Drawing.Size(253, 22);
+			this.mnuEditCodeComment.Text = "Edit Code Comment";
+			this.mnuEditCodeComment.Click += new System.EventHandler(this.mnuEditCodeComment_Click);
+			// 
 			// mnuEditInMemoryViewer
 			// 
 			this.mnuEditInMemoryViewer.Image = global::Mesen.GUI.Properties.Resources.CheatCode;
@@ -512,6 +522,7 @@
 		private System.Windows.Forms.ToolStripMenuItem mnuHidePrgAddresses;
 		private System.Windows.Forms.ToolStripSeparator sepEditLabel;
 		private System.Windows.Forms.ToolStripMenuItem mnuEditLabel;
+		private System.Windows.Forms.ToolStripMenuItem mnuEditCodeComment;
 		private System.Windows.Forms.ToolStripMenuItem mnuEditInMemoryViewer;
 		private System.Windows.Forms.ToolStripMenuItem mnuToggleBreakpoint;
 		private System.Windows.Forms.ToolStripSeparator sepAddToWatch;

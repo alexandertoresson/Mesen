@@ -22,7 +22,7 @@ public:
 	void ApplySamples(int16_t* buffer, size_t sampleCount, double masterVolumne);
 	
 	void Reset(uint32_t sampleRate);
-	bool Play(string filename, bool isSfx, uint32_t startOffset);
+	bool Play(string filename, bool isSfx, uint32_t startOffset, uint32_t loopPoint);
 	void SetPlaybackOptions(uint8_t options);
 	void SetPausedFlag(bool paused);
 	void StopBgm();

@@ -180,3 +180,4 @@ PGOHelper/PGOMesenHome
 packages/*
 
 !Libretro/hakchi/bin
+Docs/docs.zip

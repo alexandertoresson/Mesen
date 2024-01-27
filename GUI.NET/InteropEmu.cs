@@ -208,6 +208,7 @@ namespace Mesen.GUI
 		[DllImport(DLLPath)] public static extern void SetBandGain(int band, double gain);
 		[DllImport(DLLPath)] public static extern void SetSampleRate(UInt32 sampleRate);
 		[DllImport(DLLPath)] public static extern void SetAudioLatency(UInt32 msLatency);
+		[DllImport(DLLPath)] public static extern void SetEPSMClockFrequency(UInt32 clockFrequency);
 		[DllImport(DLLPath)] public static extern void SetAudioFilterSettings(AudioFilterSettings settings);
 		[DllImport(DLLPath)] public static extern void SetRunAheadFrames(UInt32 frameCount);
 
@@ -225,12 +226,13 @@ namespace Mesen.GUI
 		[DllImport(DLLPath)] public static extern void SetVideoScale(double scale, ConsoleId consoleId = ConsoleId.Master);
 		[DllImport(DLLPath)] public static extern void SetScreenRotation(UInt32 angle);
 		[DllImport(DLLPath)] public static extern void SetExclusiveRefreshRate(UInt32 refreshRate);
+		[DllImport(DLLPath)] public static extern void SetExclusiveRefreshRate2(UInt32 refreshRate);
 		[DllImport(DLLPath)] public static extern void SetVideoAspectRatio(VideoAspectRatio aspectRatio, double customRatio);
 		[DllImport(DLLPath)] public static extern void SetVideoFilter(VideoFilterType filter);
 		[DllImport(DLLPath)] public static extern void SetVideoResizeFilter(VideoResizeFilter filter);
 		[DllImport(DLLPath)] public static extern void SetRgbPalette(byte[] palette, UInt32 paletteSize);
 		[DllImport(DLLPath)] public static extern void SetPictureSettings(double brightness, double contrast, double saturation, double hue, double scanlineIntensity);
-		[DllImport(DLLPath)] public static extern void SetNtscFilterSettings(double artifacts, double bleed, double fringing, double gamma, double resolution, double sharpness, [MarshalAs(UnmanagedType.I1)]bool mergeFields, double yFilterLength, double iFilterLength, double qFilterLength, [MarshalAs(UnmanagedType.I1)]bool verticalBlend);
+		[DllImport(DLLPath)] public static extern void SetNtscFilterSettings(double artifacts, double bleed, double fringing, double gamma, double resolution, double sharpness, [MarshalAs(UnmanagedType.I1)]bool mergeFields, double yFilterLength, double iFilterLength, double qFilterLength, double decodeMatrixIR, double decodeMatrixQR, double decodeMatrixIG, double decodeMatrixQG, double decodeMatrixIB, double decodeMatrixQB, [MarshalAs(UnmanagedType.I1)]bool verticalBlend, [MarshalAs(UnmanagedType.I1)] bool colorimetryCorrection, [MarshalAs(UnmanagedType.I1)] bool useExternalPalette);
 		[DllImport(DLLPath)] public static extern void SetInputDisplaySettings(byte visiblePorts, InputDisplayPosition displayPosition, [MarshalAs(UnmanagedType.I1)]bool displayHorizontally);
 		[DllImport(DLLPath)] public static extern void SetAutoSaveOptions(UInt32 delayInMinutes, [MarshalAs(UnmanagedType.I1)]bool showMessage);
 		[DllImport(DLLPath)] public static extern void SetPauseScreenMessage([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(UTF8Marshaler))]string message);
@@ -678,7 +680,8 @@ namespace Mesen.GUI
 			ScaleFilterType filterType,
 			UInt32 scale,
 			HdPackRecordFlags flags,
-			UInt32 chrRamBankSize);
+			UInt32 chrRamBankSize,
+			HDPackOuputTileType tileType);
 
 		[DllImport(DLLPath)] public static extern void HdBuilderStopRecording();
 
@@ -1365,6 +1368,7 @@ namespace Mesen.GUI
 		[MarshalAs(UnmanagedType.I1)]
 		public bool WriteToggle;
 
+		public UInt16 bgTileAddr;
 		public UInt16 HighBitShift;
 		public UInt16 LowBitShift;
 	}
@@ -1731,6 +1735,7 @@ namespace Mesen.GUI
 
 		BreakOnPpu2006ScrollGlitch = 0x20000,
 		BreakOnBusConflict = 0x40000,
+		BreakOnUnlogged = 0x80000,
 	}
 
 	public struct InteropRomInfo
@@ -2297,8 +2302,10 @@ namespace Mesen.GUI
 		VRC6 = 7,
 		VRC7 = 8,
 		Namco163 = 9,
-		Sunsoft5B = 10
-	}
+		Sunsoft5B = 10,
+		EPSM_L = 11,
+		EPSM_R= 12
+   }
 
 	public enum EqualizerFilterType
 	{
@@ -2354,6 +2361,13 @@ namespace Mesen.GUI
 		Prescale6x = 22,
 		Prescale8x = 23,
 		Prescale10x = 24,
+	}
+
+	public enum HDPackOuputTileType
+	{
+		Both = 0,
+		BG = 1,
+		Sprite= 2
 	}
 
 	public enum VideoResizeFilter
@@ -2548,9 +2562,10 @@ namespace Mesen.GUI
 		SortByUsageFrequency = 2,
 		GroupBlankTiles = 4,
 		IgnoreOverscan = 8,
-	}
+	   SaveFrame = 16,
+   }
 
-	[StructLayout(LayoutKind.Sequential)]
+   [StructLayout(LayoutKind.Sequential)]
 	public class AddressTypeInfo
 	{
 		public Int32 Address;

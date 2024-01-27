@@ -61,6 +61,7 @@ public:
 
 	void DecodeFrame(bool synchronous = false);
 	void TakeScreenshot();
+	void TakeScreenshot(string filePath);
 	void TakeScreenshot(std::stringstream &stream, bool rawScreenshot = false);
 
 	uint32_t GetFrameCount();

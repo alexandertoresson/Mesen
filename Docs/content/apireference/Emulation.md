@@ -224,6 +224,36 @@ type - *Enum* See [executeCountType](/apireference/enums.html#executecounttype)
 **Description**  
 Runs the emulator for the specified number of cycles/instructions and then breaks the execution.   
 
+## stepOut ##
+
+**Syntax**  
+
+    emu.stepOut()
+
+**Parameters**  
+*None*
+
+**Return value**  
+*None*
+
+**Description**  
+Steps over the next instruction and then breaks the execution.   
+
+## stepOver ##
+
+**Syntax**  
+
+    emu.stepOver()
+
+**Parameters**  
+*None*
+
+**Return value**  
+*None*
+
+**Description**  
+Steps out of the current subroutine and then breaks the execution.   
+
 ## reset ##
 
 **Syntax**  

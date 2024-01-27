@@ -49,6 +49,8 @@ public:
 	static int Break(lua_State *lua);
 	static int Resume(lua_State *lua);
 	static int Execute(lua_State *lua);
+	static int StepOut(lua_State* lua);
+	static int StepOver(lua_State* lua);
 	static int Rewind(lua_State *lua);
 
 	static int TakeScreenshot(lua_State *lua);

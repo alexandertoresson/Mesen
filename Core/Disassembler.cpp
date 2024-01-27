@@ -164,6 +164,7 @@ bool Disassembler::IsJump(uint8_t opCode)
 bool Disassembler::IsUnconditionalJump(uint8_t opCode)
 {
 	return (
+		opCode == 0x00 || //BRK
 		opCode == 0x40 || //RTI
 		opCode == 0x60 || //RTS
 		opCode == 0x6C || //JMP (Indirect)

@@ -339,7 +339,7 @@ Various types of labels can be defined:
 - **PRG ROM**: Used for constants, data, code labels and functions in PRG ROM - the address value represents the offset from the start of PRG ROM (which can exceed $FFFF)
 - **Work RAM**: Used for variables in work ram (also called PRG RAM without battery backup) - the address value represents the offset from the start of the ram chip. 
 - **Save RAM**: Used for variables in work ram (also called battery-backed PRG RAM) - the address value represents the offset from the start of the ram chip.
-- **Register**: These are used to give name to built-in or mapper-specific registers.  For example, the $2000 PPU register could be renamed to "PpuControl". 
+- **Register**: These are used to give name to built-in or mapper-specific registers.  For example, the $2000 PPU register could be renamed to "PpuControl". Essentially, they are CPU memory labels ($0000-$FFFF) that ignore all banking, etc. The rules for them to be used in the disassembly window are slightly different.
    
 There are some restrictions on what a label can contain -- in general, they must begin with a letter or an underscore and cannot contain spaces or most non-alphanumeric characters.
 Labels can also contain a comment which is shown in the code window as well as in the tooltips that are displayed when putting your cursor over a label in the code window. 
@@ -392,6 +392,7 @@ The `Break Options` submenu contains a number of options to configure under whic
 * **Break on unofficial opcodes**: Break the emulation whenever an unofficial opcode is about to execute.
 * **Break on BRK**: Break the emulation whenever a BRK instruction is about to execute.
 * **Break on CPU crash**: Break the emulation whenever an instruction that will cause the CPU to freeze is about to execute.
+* **Break on unlogged code**: Break the emulation whenever an instruction that haven't been logged is about to execute.
 
 <div></div>
    
@@ -443,6 +444,10 @@ These options configure which portions of the code is copied into the clipboard 
 <div></div>
 
 * **Refresh UI while running**: When enabled, the watch window and the CPU/PPU status will be updated continuously while the emulation is running (instead of only updating when the execution breaks)
+
+<div></div>
+
+* **Reload ROM on Power Cycle**: When enabled, the ROM will be loaded again if the Power Cycle is triggered and changes made to the ROM since it is last loaded will take effect. 
 
 ## Workspaces ##
 

@@ -23,7 +23,7 @@ chapter: false
 
 **Fulscreen Resolution**: This option is shown only when exclusive fullsceen mode is enabled. It allows you to select the screen resolution that should be used when in exclusive fullscreen mode. The default resolution is the current Windows screen resolution.
 
-**Requested Refresh Rate**: This option is shown only when exclusive fullsceen mode is enabled. It allows you to select your preferred refresh rate when running in exclusive fullscreen mode.
+**Requested Refresh Rate**: This option is shown only when exclusive fullsceen mode is enabled. It allows you to select your preferred refresh rate for NTSC and PAL/Dendy when running in exclusive fullscreen mode.
 
 **Use integer scale values when entering fullscreen mode**: By default, fullscreen mode fills the entire screen. However, this can cause non-integer scaling values to be used -- for example, in 1080p resolution, the scale becomes 4.5x. Since this can cause irregularly shaped pixels, you can use this option to use the nearest integer scale value instead (e.g 4x in this example).
 

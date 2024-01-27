@@ -41,3 +41,5 @@ Unlike all the other options before it, the options in this section affect the w
 * **Swap square channel duty cycles**: This option is to mimic some older NES clones that had incorrect sound output for both of the square channels.  It greatly alters the sound in some games, and shouldn't be enabled unless you want this behavior.
 
 * **Disable noise channel mode flag**: Very early Famicom models did not implement this feature, so this option is available to mimic early Famicom consoles. It changes the sound output of the noise channel in some games, and shouldn't be enabled unless you want this behavior.
+
+* **EPSG Clock Frequency (default is 3579545Hz)**: This option sets the base frequency the Yamaha Sound Chip works at, it mainly affect pitch and timings. simply how it calculates sound. The YMF288 it made to work at 8Mhz, but 3.579545Mhz is used as default so it matches up with S5b.

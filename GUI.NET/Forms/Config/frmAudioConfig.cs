@@ -31,6 +31,7 @@ namespace Mesen.GUI.Forms.Config
 			cboAudioDevice.Items.AddRange(InteropEmu.GetAudioDevices().ToArray());
 
 			AddBinding("EnableAudio", chkEnableAudio);
+			AddBinding("EnableEPSM", chkEnableEPSM);
 			AddBinding("MasterVolume", trkMaster);
 			AddBinding("Square1Volume", trkSquare1Vol);
 			AddBinding("Square2Volume", trkSquare2Vol);
@@ -43,6 +44,8 @@ namespace Mesen.GUI.Forms.Config
 			AddBinding("Vrc7Volume", trkVrc7Vol);
 			AddBinding("Namco163Volume", trkNamco163Vol);
 			AddBinding("Sunsoft5bVolume", trkSunsoft5b);
+			AddBinding("EPSMVolume_L", trkEPSMVol_L);
+			AddBinding("EPSMVolume_R", trkEPSMVol_R);
 
 			AddBinding("Square1Panning", trkSquare1Pan);
 			AddBinding("Square2Panning", trkSquare2Pan);
@@ -55,6 +58,10 @@ namespace Mesen.GUI.Forms.Config
 			AddBinding("Vrc7Panning", trkVrc7Pan);
 			AddBinding("Namco163Panning", trkNamcoPan);
 			AddBinding("Sunsoft5bPanning", trkSunsoftPan);
+			AddBinding("EPSMPanning_L", trkEPSMPan_L);
+			AddBinding("EPSMPanning_R", trkEPSMPan_R);
+
+			AddBinding("EPSMClockFrequency", nudEPSMClockFrequency);
 
 			AddBinding("AudioLatency", nudLatency);
 			AddBinding("SampleRate", cboSampleRate);

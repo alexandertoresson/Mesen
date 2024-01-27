@@ -9,6 +9,8 @@
 #include "IBattery.h"
 #include "RomData.h"
 #include "Console.h"
+#include "CPU.h"
+#include "EPSMAudio.h"
 
 class BaseControlDevice;
 
@@ -70,6 +72,9 @@ protected:
 	bool _hasChrBattery = false;
 	int16_t _vramOpenBusValue = -1;
 
+	uint8_t* _miscRom = nullptr;
+	uint32_t _miscRomSize = 0;
+
 	virtual void InitMapper() = 0;
 	virtual void InitMapper(RomData &romData);
 	virtual uint16_t GetPRGPageSize() = 0;
@@ -104,6 +109,7 @@ protected:
 	uint8_t InternalReadRam(uint16_t addr);
 
 	virtual void WriteRegister(uint16_t addr, uint8_t value);
+	virtual void WriteEPSM(uint16_t addr, uint8_t value);
 	virtual uint8_t ReadRegister(uint16_t addr);
 
 	void SelectPrgPage4x(uint16_t slot, uint16_t page, PrgMemoryType memoryType = PrgMemoryType::PrgRom);
@@ -155,7 +161,7 @@ protected:
 public:
 	static constexpr uint32_t NametableCount = 0x10;
 	static constexpr uint32_t NametableSize = 0x400;
-	
+	unique_ptr<EPSMAudio> _epsmaudio;
 	void Initialize(RomData &romData);
 
 	virtual ~BaseMapper();
@@ -165,6 +171,7 @@ public:
 
 	virtual void SetNesModel(NesModel model) { }
 	virtual void ProcessCpuClock() { }
+	virtual void ProcessEPSMClock() { _epsmaudio->Clock(); }
 	virtual void NotifyVRAMAddressChange(uint16_t addr);
 	virtual void GetMemoryRanges(MemoryRanges &ranges) override;
 	
