@@ -200,6 +200,7 @@ namespace Mesen.GUI.Forms.Config
 					}
 					break;
 				case VideoFilterType.LMP88959Ntsc:
+				case VideoFilterType.LMP88959Pal:
 					{
 						tlpNtscFilter1.Visible = false;
 						tlpNtscFilter2.Visible = false;

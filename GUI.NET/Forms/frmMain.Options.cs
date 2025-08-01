@@ -375,5 +375,10 @@ namespace Mesen.GUI.Forms
 		{
 			SetVideoFilter(VideoFilterType.LMP88959Ntsc);
 		}
+
+		private void mnuPalLMP88959Filter_Click(object sender, EventArgs e)
+		{
+			SetVideoFilter(VideoFilterType.LMP88959Pal);
+		}
 	}
 }

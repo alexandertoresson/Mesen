@@ -410,6 +410,10 @@ extern "C" {
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::LMP88959Ntsc);
 				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true, 0);
 			}
+			else if (value == "LMP88959Pal") {
+				_console->GetSettings()->SetVideoFilterType(VideoFilterType::LMP88959Pal);
+				_console->GetSettings()->SetNtscFilterSettings(0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, true, true, 0);
+			}
 		}
 
 		if(readVariable(MesenPalette, var)) {

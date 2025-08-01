@@ -107,6 +107,7 @@ namespace Mesen.GUI.Forms
             this.mnuNtscBisqwitHalfFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuNtscBisqwitFullFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuNtscLMP88959Filter = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuPalLMP88959Filter = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem15 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuXBRZ2xFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuXBRZ3xFilter = new System.Windows.Forms.ToolStripMenuItem();
@@ -833,6 +834,7 @@ namespace Mesen.GUI.Forms
             this.mnuNtscBisqwitHalfFilter,
             this.mnuNtscBisqwitFullFilter,
             this.mnuNtscLMP88959Filter,
+            this.mnuPalLMP88959Filter,
             this.toolStripMenuItem15,
             this.mnuXBRZ2xFilter,
             this.mnuXBRZ3xFilter,
@@ -911,6 +913,13 @@ namespace Mesen.GUI.Forms
             this.mnuNtscLMP88959Filter.Size = new System.Drawing.Size(206, 22);
             this.mnuNtscLMP88959Filter.Text = "NTSC 2x (LMP88959)";
             this.mnuNtscLMP88959Filter.Click += new System.EventHandler(this.mnuNtscLMP88959Filter_Click);
+            // 
+            // mnuPalLMP88959Filter
+            // 
+            this.mnuPalLMP88959Filter.Name = "mnuPalLMP88959Filter";
+            this.mnuPalLMP88959Filter.Size = new System.Drawing.Size(206, 22);
+            this.mnuPalLMP88959Filter.Text = "PAL 2x (LMP88959)";
+            this.mnuPalLMP88959Filter.Click += new System.EventHandler(this.mnuPalLMP88959Filter_Click);
             // 
             // toolStripMenuItem15
             // 
@@ -1988,6 +1997,7 @@ namespace Mesen.GUI.Forms
 		private System.Windows.Forms.ToolStripMenuItem mnuNtscBisqwitFullFilter;
 		private System.Windows.Forms.ToolStripMenuItem mnuNtscBisqwitQuarterFilter;
 		private System.Windows.Forms.ToolStripMenuItem mnuNtscLMP88959Filter;
+		private System.Windows.Forms.ToolStripMenuItem mnuPalLMP88959Filter;
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem22;
 		private System.Windows.Forms.ToolStripMenuItem mnuVideoRecorder;
 		private System.Windows.Forms.ToolStripMenuItem mnuAviRecord;
